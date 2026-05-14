@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VvE Beheer Collectief — Bedrijfsoverzicht</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0d1f2d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VvE Dashboard">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,700;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #0d1f2d;
+      --gold: #c8a96e;
+      --cream: #f5f0e8;
+      --gold-15: rgba(200,169,110,0.15);
+      --gold-25: rgba(200,169,110,0.25);
+      --gold-40: rgba(200,169,110,0.40);
+      --cream-85: rgba(245,240,232,0.85);
+      --cream-50: rgba(245,240,232,0.50);
+      --cream-30: rgba(245,240,232,0.30);
+      --radius: 12px;
+      --radius-sm: 7px;
+    }
+
+    body {
+      background: var(--navy);
+      color: var(--cream);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 400;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+
+    #app { max-width: 860px; margin: 0 auto; padding: 28px 20px 60px; }
+
+    /* HEADER */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .app-title {
+      font-family: 'Fraunces', serif;
+      font-size: 22px;
+      font-weight: 300;
+      letter-spacing: -0.01em;
+      color: var(--cream);
+    }
+
+    .app-title em { color: var(--gold); font-style: italic; }
+
+    .view-toggle {
+      display: flex;
+      background: rgba(255,255,255,0.06);
+      border-radius: 8px;
+      padding: 3px;
+      gap: 2px;
+    }
+
+    .toggle-btn {
+      padding: 6px 16px;
+      border-radius: 6px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--cream-50);
+      cursor: pointer;
+      background: none;
+      border: none;
+      letter-spacing: 0.03em;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    .toggle-btn.active { background: var(--gold-15); color: var(--gold); }
+
+    /* RINGS ROW */
+    .rings-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .ring-card {
+      background: rgba(200,169,110,0.06);
+      border: 1px solid rgba(200,169,110,0.2);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s, transform 0.15s;
+      user-select: none;
+    }
+
+    .ring-card:hover { border-color: var(--gold-40); transform: translateY(-1px); }
+    .ring-card.active { border-color: var(--gold); background: rgba(200,169,110,0.1); }
+
+    .ring-wrap { position: relative; width: 56px; height: 56px; flex-shrink: 0; }
+    .ring-wrap svg { width: 56px; height: 56px; transform: rotate(-90deg); }
+    .ring-bg { fill: none; stroke: rgba(200,169,110,0.15); stroke-width: 4; }
+    .ring-fill {
+      fill: none;
+      stroke: var(--gold);
+      stroke-width: 4;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .ring-pct {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: var(--gold);
+    }
+
+    .ring-info { flex: 1; min-width: 0; }
+
+    .ring-pillar-label {
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      color: var(--gold);
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .ring-name {
+      font-family: 'Fraunces', serif;
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--cream);
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ring-count { font-size: 11px; color: var(--cream-50); }
+
+    /* DETAIL PANEL */
+    #detail-panel {
+      background: rgba(200,169,110,0.06);
+      border: 1px solid rgba(200,169,110,0.25);
+      border-radius: var(--radius);
+      overflow: hidden;
+      max-height: 0;
+      opacity: 0;
+      transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.25s;
+    }
+
+    #detail-panel.open { opacity: 1; }
+
+    .detail-inner { padding: 18px 18px 14px; }
+
+    .detail-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .detail-title {
+      font-family: 'Fraunces', serif;
+      font-size: 17px;
+      font-weight: 400;
+      color: var(--cream);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-add {
+      background: var(--gold-15);
+      border: 1px solid var(--gold-40);
+      border-radius: 6px;
+      padding: 5px 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gold);
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-add:hover { background: var(--gold-25); }
+
+    .task-list { display: flex; flex-direction: column; gap: 5px; }
+
+    .task-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      background: rgba(255,255,255,0.03);
+      border-radius: var(--radius-sm);
+      transition: background 0.1s;
+    }
+
+    .task-row:hover { background: rgba(255,255,255,0.06); }
+
+    .task-check {
+      width: 17px; height: 17px;
+      border: 1.5px solid rgba(200,169,110,0.45);
+      border-radius: 4px;
+      flex-shrink: 0;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, border-color 0.15s;
+      background: transparent;
+    }
+
+    .task-check.done { background: var(--gold); border-color: var(--gold); color: var(--navy); }
+    .task-check.done::after { content: '✓'; font-size: 11px; font-weight: 900; line-height: 1; }
+
+    .task-label { flex: 1; font-size: 13px; color: var(--cream-85); line-height: 1.4; }
+    .task-label.done { text-decoration: line-through; color: var(--cream-30); }
+
+    .task-label-input {
+      flex: 1;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--gold-40);
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      color: var(--cream);
+      outline: none;
+    }
+
+    .task-label-input:focus { border-color: var(--gold); }
+
+    .task-icons { display: flex; gap: 4px; flex-shrink: 0; opacity: 0; transition: opacity 0.15s; }
+    .task-row:hover .task-icons,
+    .task-row:focus-within .task-icons { opacity: 1; }
+
+    .task-icon {
+      width: 26px; height: 26px;
+      border-radius: 4px;
+      background: rgba(200,169,110,0.08);
+      border: none;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px;
+      cursor: pointer;
+      color: rgba(200,169,110,0.6);
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .task-icon:hover { background: var(--gold-15); color: var(--gold); }
+    .task-icon.delete-confirm { background: rgba(220,60,60,0.18); color: #e07070; }
+
+    /* ROADMAP VIEW */
+    #roadmap-view { display: none; }
+    #roadmap-view.visible { display: block; }
+
+    .roadmap-legend {
+      font-size: 12px;
+      color: var(--cream-50);
+      margin-bottom: 22px;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .legend-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+
+    .phase-item { display: flex; gap: 16px; }
+
+    .phase-marker {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex-shrink: 0;
+      width: 40px;
+    }
+
+    .phase-dot {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: 2px solid var(--gold-40);
+      background: rgba(200,169,110,0.1);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Fraunces', serif;
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--gold);
+      flex-shrink: 0;
+    }
+
+    .phase-dot.future { border-color: rgba(200,169,110,0.2); background: transparent; color: rgba(200,169,110,0.3); }
+
+    .phase-connector {
+      width: 2px;
+      flex: 1;
+      min-height: 16px;
+      background: rgba(200,169,110,0.12);
+      margin-top: 4px;
+    }
+
+    .phase-content { flex: 1; padding-bottom: 26px; padding-top: 8px; }
+
+    .phase-name-label {
+      font-family: 'Fraunces', serif;
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--cream);
+      margin-bottom: 10px;
+    }
+
+    .phase-name-label.future { color: var(--cream-50); }
+
+    .phase-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .phase-tag {
+      padding: 4px 10px;
+      border-radius: 5px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .tag-brand { background: rgba(200,169,110,0.15); color: var(--gold); border: 1px solid rgba(200,169,110,0.3); }
+    .tag-website { background: rgba(100,160,210,0.12); color: #7ab8d4; border: 1px solid rgba(100,160,210,0.25); }
+    .tag-automation { background: rgba(120,195,140,0.1); color: #7dc892; border: 1px solid rgba(120,195,140,0.22); }
+    .tag-done { background: rgba(255,255,255,0.04); color: var(--cream-30); border: 1px solid rgba(255,255,255,0.08); text-decoration: line-through; }
+    .tag-empty { font-size: 12px; color: var(--cream-30); font-style: italic; }
+
+    /* RESET */
+    .reset-section {
+      margin-top: 44px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(200,169,110,0.1);
+      text-align: center;
+    }
+
+    .btn-reset {
+      background: none;
+      border: 1px solid rgba(200,169,110,0.18);
+      border-radius: 6px;
+      padding: 7px 18px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--cream-50);
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .btn-reset:hover { border-color: rgba(200,60,60,0.45); color: #e07070; }
+
+    /* RESPONSIVE */
+    @media (max-width: 620px) {
+      .rings-row { grid-template-columns: 1fr; }
+      header { flex-direction: column; align-items: flex-start; }
+      .ring-card { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1 class="app-title">VvE Beheer <em>Collectief</em></h1>
+      <div class="view-toggle">
+        <button class="toggle-btn active" onclick="switchView('dashboard')">Dashboard</button>
+        <button class="toggle-btn" onclick="switchView('roadmap')">Roadmap</button>
+      </div>
+    </header>
+
+    <div id="dashboard-view">
+      <div class="rings-row" id="rings-row"></div>
+      <div id="detail-panel"></div>
+    </div>
+
+    <div id="roadmap-view">
+      <div class="roadmap-legend">
+        <span><span class="legend-dot" style="background:#c8a96e;"></span>Brand</span>
+        <span><span class="legend-dot" style="background:#7ab8d4;"></span>Website</span>
+        <span><span class="legend-dot" style="background:#7dc892;"></span>Automation</span>
+      </div>
+      <div id="roadmap-container"></div>
+    </div>
+
+    <div class="reset-section">
+      <button class="btn-reset" onclick="resetData()">Voortgang resetten</button>
+    </div>
+  </div>
+
+  <script>
+    // ─── Constants ───────────────────────────────────────────────────────────
+    const STORAGE_KEY = 'vve-dashboard-v1';
+
+    const DEFAULT_DATA = {
+      activePillar: null,
+      pillars: [
+        {
+          id: 'brand', icon: '🎨', label: 'Brand Refinement', pillarNum: 1,
+          tasks: [
+            { id: 'b1', label: 'Logo finaliseren / updaten', done: false, phase: 1 },
+            { id: 'b2', label: 'Brand kleurenpalet & typografie vastleggen', done: false, phase: 1 },
+            { id: 'b3', label: 'Brand guidelines document opstellen', done: false, phase: 1 },
+            { id: 'b4', label: 'Social media templates maken', done: false, phase: 2 },
+            { id: 'b5', label: 'Visitekaartjes & drukwerk updaten', done: false, phase: 2 }
+          ]
+        },
+        {
+          id: 'website', icon: '🌐', label: 'Nieuwe Website', pillarNum: 2,
+          tasks: [
+            { id: 'w1', label: 'Homepage', done: true, phase: 1 },
+            { id: 'w2', label: 'Over ons pagina', done: false, phase: 1 },
+            { id: 'w3', label: 'Pakketten pagina', done: false, phase: 2 },
+            { id: 'w4', label: 'Contact pagina', done: false, phase: 2 },
+            { id: 'w5', label: 'Schademelding formulier', done: false, phase: 2 },
+            { id: 'w6', label: '4× Diensten subpagina\'s', done: false, phase: 2 },
+            { id: 'w7', label: 'SEO & meta tags', done: false, phase: 3 },
+            { id: 'w8', label: 'Live zetten (DNS / hosting)', done: false, phase: 4 }
+          ]
+        },
+        {
+          id: 'automation', icon: '⚡', label: 'Automation', pillarNum: 3,
+          tasks: [
+            { id: 'a1', label: 'Schademeldingen workflow (n8n)', done: false, phase: 3 },
+            { id: 'a2', label: 'Klantonboarding workflow', done: false, phase: 3 },
+            { id: 'a3', label: 'Factuur- & debiteurenproces', done: false, phase: 3 },
+            { id: 'a4', label: 'E-mail templates & reminders', done: false, phase: 3 },
+            { id: 'a5', label: 'Vergadering & notulen workflow', done: false, phase: 4 },
+            { id: 'a6', label: 'Maandrapportage automatiseren', done: false, phase: 4 }
+          ]
+        }
+      ],
+      phases: [
+        { id: 1, label: 'Fase 1 — Fundament' },
+        { id: 2, label: 'Fase 2 — Uitbouwen' },
+        { id: 3, label: 'Fase 3 — Automation' },
+        { id: 4, label: 'Fase 4 — Lanceren & Schalen' }
+      ]
+    };
+
+    // ─── State ───────────────────────────────────────────────────────────────
+    let state;
+
+    function loadData() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(DEFAULT_DATA));
+      } catch { return JSON.parse(JSON.stringify(DEFAULT_DATA)); }
+    }
+
+    function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+    function getPillar(id) { return state.pillars.find(p => p.id === id); }
+
+    function getPct(pillar) {
+      const total = pillar.tasks.length;
+      return total === 0 ? 0 : Math.round(pillar.tasks.filter(t => t.done).length / total * 100);
+    }
+
+    function uid() { return Math.random().toString(36).slice(2, 9); }
+
+    function escHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    // ─── Rings ───────────────────────────────────────────────────────────────
+    const R = 24;
+    const CIRC = +(2 * Math.PI * R).toFixed(1);
+
+    function renderRings() {
+      document.getElementById('rings-row').innerHTML = state.pillars.map(p => {
+        const pct = getPct(p);
+        const done = p.tasks.filter(t => t.done).length;
+        const offset = +(CIRC - CIRC * pct / 100).toFixed(1);
+        const active = state.activePillar === p.id;
+        return `
+          <div class="ring-card${active ? ' active' : ''}" onclick="activatePillar('${p.id}')">
+            <div class="ring-wrap">
+              <svg viewBox="0 0 56 56">
+                <circle class="ring-bg" cx="28" cy="28" r="${R}"/>
+                <circle class="ring-fill" cx="28" cy="28" r="${R}"
+                  stroke-dasharray="${CIRC}" stroke-dashoffset="${offset}"/>
+              </svg>
+              <div class="ring-pct">${pct}%</div>
+            </div>
+            <div class="ring-info">
+              <div class="ring-pillar-label">Pilaar ${p.pillarNum}</div>
+              <div class="ring-name">${p.icon} ${escHtml(p.label)}</div>
+              <div class="ring-count">${done} van ${p.tasks.length} taken klaar</div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // ─── Detail Panel ────────────────────────────────────────────────────────
+    function activatePillar(id) {
+      if (state.activePillar === id) {
+        state.activePillar = null;
+        collapsePanel();
+      } else {
+        state.activePillar = id;
+        renderRings();
+        renderDetailPanel();
+        expandPanel();
+      }
+      saveData();
+    }
+
+    function expandPanel() {
+      const panel = document.getElementById('detail-panel');
+      panel.classList.add('open');
+      panel.style.maxHeight = panel.scrollHeight + 200 + 'px';
+    }
+
+    function collapsePanel() {
+      const panel = document.getElementById('detail-panel');
+      panel.classList.remove('open');
+      panel.style.maxHeight = '0';
+      renderRings();
+    }
+
+    function renderDetailPanel() {
+      if (!state.activePillar) return;
+      const p = getPillar(state.activePillar);
+      const panel = document.getElementById('detail-panel');
+      panel.innerHTML = `
+        <div class="detail-inner">
+          <div class="detail-header">
+            <div class="detail-title">${p.icon} ${escHtml(p.label)}</div>
+            <button class="btn-add" onclick="addTask('${p.id}')">+ Taak toevoegen</button>
+          </div>
+          <div class="task-list" id="task-list-${p.id}">
+            ${p.tasks.map(t => taskRowHtml(p.id, t)).join('')}
+          </div>
+        </div>`;
+      setTimeout(() => {
+        panel.style.maxHeight = panel.scrollHeight + 'px';
+      }, 0);
+    }
+
+    function taskRowHtml(pillarId, task) {
+      return `
+        <div class="task-row" id="task-${task.id}">
+          <div class="task-check${task.done ? ' done' : ''}"
+            onclick="toggleTask('${pillarId}','${task.id}')"></div>
+          <div class="task-label${task.done ? ' done' : ''}">${escHtml(task.label)}</div>
+          <div class="task-icons">
+            <button class="task-icon" onclick="startEdit('${pillarId}','${task.id}')" title="Wijzigen">&#9998;</button>
+            <button class="task-icon" onclick="confirmDelete('${pillarId}','${task.id}')"
+              title="Verwijderen" id="del-${task.id}">&#128465;</button>
+          </div>
+        </div>`;
+    }
+
+    // ─── CRUD ────────────────────────────────────────────────────────────────
+    function toggleTask(pillarId, taskId) {
+      const task = getPillar(pillarId).tasks.find(t => t.id === taskId);
+      task.done = !task.done;
+      saveData();
+      renderRings();
+      renderDetailPanel();
+      expandPanel();
+    }
+
+    function addTask(pillarId) {
+      const newTask = { id: uid(), label: '', done: false, phase: 1 };
+      getPillar(pillarId).tasks.push(newTask);
+      saveData();
+      renderDetailPanel();
+      expandPanel();
+      setTimeout(() => startEdit(pillarId, newTask.id, true), 30);
+    }
+
+    function startEdit(pillarId, taskId, isNew = false) {
+      const task = getPillar(pillarId).tasks.find(t => t.id === taskId);
+      const row = document.getElementById(`task-${taskId}`);
+      if (!row) return;
+      const labelEl = row.querySelector('.task-label');
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'task-label-input';
+      input.value = task.label;
+      input.placeholder = 'Taaknaam...';
+      labelEl.replaceWith(input);
+      input.focus();
+      if (task.label) input.select();
+
+      let saved = false;
+      const save = () => {
+        if (saved) return;
+        saved = true;
+        const v = input.value.trim();
+        if (!v && isNew) { deleteTask(pillarId, taskId, true); return; }
+        task.label = v || task.label;
+        saveData();
+        renderDetailPanel();
+        expandPanel();
+      };
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); save(); }
+        if (e.key === 'Escape') {
+          saved = true;
+          if (isNew) { deleteTask(pillarId, taskId, true); }
+          else { renderDetailPanel(); expandPanel(); }
+        }
+      });
+      input.addEventListener('blur', save);
+    }
+
+    const _deleteConfirm = new Set();
+
+    function confirmDelete(pillarId, taskId) {
+      const btn = document.getElementById(`del-${taskId}`);
+      if (!btn) return;
+      if (_deleteConfirm.has(taskId)) {
+        deleteTask(pillarId, taskId);
+        _deleteConfirm.delete(taskId);
+      } else {
+        _deleteConfirm.add(taskId);
+        btn.classList.add('delete-confirm');
+        btn.title = 'Nogmaals klikken bevestigt verwijdering';
+        setTimeout(() => {
+          _deleteConfirm.delete(taskId);
+          const b = document.getElementById(`del-${taskId}`);
+          if (b) { b.classList.remove('delete-confirm'); b.title = 'Verwijderen'; }
+        }, 2500);
+      }
+    }
+
+    function deleteTask(pillarId, taskId, silent = false) {
+      const p = getPillar(pillarId);
+      p.tasks = p.tasks.filter(t => t.id !== taskId);
+      saveData();
+      renderRings();
+      renderDetailPanel();
+      if (!silent) expandPanel();
+    }
+
+    // ─── Roadmap ─────────────────────────────────────────────────────────────
+    const PILLAR_TAG = { brand: 'tag-brand', website: 'tag-website', automation: 'tag-automation' };
+
+    function renderRoadmap() {
+      const container = document.getElementById('roadmap-container');
+      container.innerHTML = state.phases.map((phase, idx) => {
+        const isLast = idx === state.phases.length - 1;
+        const tasks = state.pillars.flatMap(p =>
+          p.tasks.filter(t => t.phase === phase.id).map(t => ({ ...t, pillarId: p.id }))
+        );
+        const noTasks = tasks.length === 0;
+
+        return `
+          <div class="phase-item">
+            <div class="phase-marker">
+              <div class="phase-dot${noTasks ? ' future' : ''}">${phase.id}</div>
+              ${!isLast ? '<div class="phase-connector"></div>' : ''}
+            </div>
+            <div class="phase-content">
+              <div class="phase-name-label${noTasks ? ' future' : ''}">${escHtml(phase.label)}</div>
+              <div class="phase-tags">
+                ${noTasks
+                  ? '<span class="tag-empty">Geen taken toegewezen</span>'
+                  : tasks.map(t =>
+                    `<span class="phase-tag ${t.done ? 'tag-done' : PILLAR_TAG[t.pillarId]}">${escHtml(t.label)}</span>`
+                  ).join('')}
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    // ─── View Toggle ─────────────────────────────────────────────────────────
+    function switchView(view) {
+      const dash = document.getElementById('dashboard-view');
+      const road = document.getElementById('roadmap-view');
+      const btns = document.querySelectorAll('.toggle-btn');
+      if (view === 'dashboard') {
+        dash.style.display = 'block';
+        road.classList.remove('visible');
+        btns[0].classList.add('active');
+        btns[1].classList.remove('active');
+      } else {
+        dash.style.display = 'none';
+        road.classList.add('visible');
+        btns[1].classList.add('active');
+        btns[0].classList.remove('active');
+        renderRoadmap();
+      }
+    }
+
+    // ─── Reset ───────────────────────────────────────────────────────────────
+    function resetData() {
+      if (!confirm('Alle voortgang wissen en terug naar de standaard taken? Dit kan niet ongedaan worden gemaakt.')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      state = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      init();
+    }
+
+    // ─── Init ────────────────────────────────────────────────────────────────
+    function init() {
+      state = loadData();
+      switchView('dashboard');
+      renderRings();
+      if (state.activePillar) {
+        renderDetailPanel();
+        expandPanel();
+      }
+    }
+
+    // ─── Service Worker ──────────────────────────────────────────────────────
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .catch(err => console.warn('SW registration failed:', err));
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <title>VvE Dashboard — Icon Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    body { background: #0d1f2d; color: #f5f0e8; font-family: 'DM Sans', sans-serif; padding: 40px; text-align: center; }
+    h2 { font-family: 'Fraunces', serif; font-weight: 300; font-size: 26px; color: #c8a96e; margin-bottom: 10px; }
+    p { color: rgba(245,240,232,0.55); font-size: 14px; margin-bottom: 28px; line-height: 1.6; }
+    .btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    button {
+      background: rgba(200,169,110,0.15);
+      border: 1px solid #c8a96e;
+      color: #c8a96e;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover { background: rgba(200,169,110,0.28); }
+    .previews { margin-top: 32px; display: flex; gap: 24px; justify-content: center; align-items: flex-end; flex-wrap: wrap; }
+    .preview-wrap { text-align: center; }
+    .preview-wrap canvas { border-radius: 20%; display: block; margin: 0 auto 8px; }
+    .preview-label { font-size: 11px; color: rgba(245,240,232,0.4); letter-spacing: 0.08em; }
+    canvas#c192, canvas#c512 { display: block; }
+  </style>
+</head>
+<body>
+  <h2>PWA Icon Generator</h2>
+  <p>Klik op een knop om het icon te downloaden.<br>Sla op als <code style="color:#c8a96e">icon-192.png</code> en <code style="color:#c8a96e">icon-512.png</code> in de projectmap.</p>
+
+  <div class="btns">
+    <button onclick="generate(192)">⬇ Download icon-192.png</button>
+    <button onclick="generate(512)">⬇ Download icon-512.png</button>
+  </div>
+
+  <div class="previews">
+    <div class="preview-wrap">
+      <canvas id="c192" width="192" height="192" style="width:96px;height:96px;"></canvas>
+      <div class="preview-label">192 × 192</div>
+    </div>
+    <div class="preview-wrap">
+      <canvas id="c512" width="512" height="512" style="width:128px;height:128px;"></canvas>
+      <div class="preview-label">512 × 512</div>
+    </div>
+  </div>
+
+  <script>
+    function drawIcon(canvas, size) {
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.height = size;
+
+      // Background
+      ctx.fillStyle = '#0d1f2d';
+      ctx.fillRect(0, 0, size, size);
+
+      // Radial glow
+      const grd = ctx.createRadialGradient(size/2, size*0.45, size*0.05, size/2, size*0.45, size*0.6);
+      grd.addColorStop(0, 'rgba(200,169,110,0.18)');
+      grd.addColorStop(1, 'rgba(200,169,110,0)');
+      ctx.fillStyle = grd;
+      ctx.fillRect(0, 0, size, size);
+
+      const cx = size / 2, cy = size / 2;
+      const rOuter = size * 0.36;
+
+      // Track ring (dim)
+      ctx.beginPath();
+      ctx.arc(cx, cy, rOuter, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(200,169,110,0.2)';
+      ctx.lineWidth = size * 0.055;
+      ctx.stroke();
+
+      // Progress arc ~65%
+      ctx.beginPath();
+      ctx.arc(cx, cy, rOuter, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * 0.65);
+      ctx.strokeStyle = '#c8a96e';
+      ctx.lineWidth = size * 0.055;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+
+      // "VvE" text
+      ctx.fillStyle = '#c8a96e';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = `300 ${size * 0.21}px Fraunces, Georgia, serif`;
+      ctx.fillText('VvE', cx, cy - size * 0.01);
+    }
+
+    function generate(size) {
+      const canvas = document.getElementById(`c${size}`);
+      drawIcon(canvas, size);
+      canvas.toBlob(blob => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `icon-${size}.png`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      });
+    }
+
+    // Draw previews on load
+    window.addEventListener('load', () => {
+      drawIcon(document.getElementById('c192'), 192);
+      drawIcon(document.getElementById('c512'), 512);
+    });
+  </script>
+</body>
+</html>
