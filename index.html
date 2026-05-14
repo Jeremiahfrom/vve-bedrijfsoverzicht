@@ -1078,6 +1078,10 @@
     let _draggedBadge = null; // { taskId, pillarId }
 
     function renderRoadmap() {
+      // Clear any pending phase-delete confirms so re-renders don't leave stale confirm state
+      _phaseDeleteConfirm.forEach(id => clearTimeout(_phaseDeleteTimers.get(id)));
+      _phaseDeleteConfirm.clear();
+      _phaseDeleteTimers.clear();
       renderRoadmapLegend();
       const container = document.getElementById('roadmap-container');
       if (!container) return;
@@ -1177,7 +1181,7 @@
 
     function addPhase() {
       const maxOrder = state.phases.reduce((m, p) => Math.max(m, p.order), -1);
-      const newId = Math.max(...state.phases.map(p => p.id)) + 1;
+      const newId = Math.max(0, ...state.phases.map(p => p.id)) + 1;
       state.phases.push({ id: newId, label: `Fase ${newId}`, order: maxOrder + 1 });
       saveData();
       renderRoadmap();
