@@ -592,6 +592,8 @@
 
     // ─── Edit Mode ────────────────────────────────────────────────────────────────
     let editMode = false;
+    let selectedTaskId = null;
+    let rightPath = [];
 
     function toggleEditMode() {
       editMode = !editMode;
@@ -955,6 +957,7 @@
       removeTaskById(p.tasks, taskId);
       // Reset navigation state if deleted task was selected
       if (selectedTaskId === taskId) { selectedTaskId = null; rightPath = []; }
+      rightPath = rightPath.filter(id => id !== taskId);
       saveData();
       if (typeof renderCanvas === 'function') renderCanvas();
       renderDetailPanel();
@@ -1038,9 +1041,6 @@
     }
 
     // ─── Init ────────────────────────────────────────────────────────────────
-    let selectedTaskId = null;
-    let rightPath = [];
-
     function init() {
       state = loadData();
       switchView('dashboard');
