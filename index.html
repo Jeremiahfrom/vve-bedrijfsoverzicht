@@ -657,8 +657,9 @@
 
     // ─── CRUD ────────────────────────────────────────────────────────────────
     function toggleTask(pillarId, taskId) {
-      const task = getPillar(pillarId).tasks.find(t => t.id === taskId);
-      task.done = !task.done;
+      const found = findTask(getPillar(pillarId).tasks, taskId);
+      if (!found) return;
+      found.task.done = !found.task.done;
       saveData();
       renderRings();
       renderDetailPanel();
@@ -675,7 +676,9 @@
     }
 
     function startEdit(pillarId, taskId, isNew = false) {
-      const task = getPillar(pillarId).tasks.find(t => t.id === taskId);
+      const found = findTask(getPillar(pillarId).tasks, taskId);
+      if (!found) return;
+      const task = found.task;
       const row = document.getElementById(`task-${taskId}`);
       if (!row) return;
       const labelEl = row.querySelector('.task-label');
@@ -732,7 +735,7 @@
 
     function deleteTask(pillarId, taskId, silent = false) {
       const p = getPillar(pillarId);
-      p.tasks = p.tasks.filter(t => t.id !== taskId);
+      removeTaskById(p.tasks, taskId);
       saveData();
       renderRings();
       renderDetailPanel();
