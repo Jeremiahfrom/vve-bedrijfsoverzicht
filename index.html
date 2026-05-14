@@ -214,6 +214,8 @@
       font-size: 11px; font-weight: 600; cursor: pointer;
     }
     .pillar-edit-save:hover { background: var(--gold-40); }
+    .legend-item { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--cream-50); margin-right: 12px; }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
     .add-pillar-node {
       position: absolute; width: 80px; padding: 12px 8px;
       border-radius: 14px; border: 1.5px dashed rgba(200,169,110,0.3);
@@ -750,11 +752,13 @@
 
     // ─── Pillar CRUD ──────────────────────────────────────────────────────────────
     const _pillarDeleteConfirm = new Set();
+    const _pillarDeleteTimers = new Map();
 
     function editPillar(e, pillarId) {
       e.stopPropagation();
       document.querySelectorAll('.pillar-edit-form').forEach(f => f.remove());
       const p = getPillar(pillarId);
+      if (!p) return;
       const node = document.getElementById(`node-${pillarId}`);
 
       const form = document.createElement('div');
@@ -804,6 +808,8 @@
       const btn = document.getElementById(`node-del-${pillarId}`);
       if (!btn) return;
       if (_pillarDeleteConfirm.has(pillarId)) {
+        clearTimeout(_pillarDeleteTimers.get(pillarId));
+        _pillarDeleteTimers.delete(pillarId);
         state.pillars = state.pillars.filter(p => p.id !== pillarId);
         if (state.activePillar === pillarId) { state.activePillar = null; collapsePanel(); }
         _pillarDeleteConfirm.delete(pillarId);
@@ -813,11 +819,13 @@
       } else {
         _pillarDeleteConfirm.add(pillarId);
         btn.classList.add('delete-confirm');
-        setTimeout(() => {
+        const timer = setTimeout(() => {
           _pillarDeleteConfirm.delete(pillarId);
+          _pillarDeleteTimers.delete(pillarId);
           const b = document.getElementById(`node-del-${pillarId}`);
           if (b) b.classList.remove('delete-confirm');
         }, 2500);
+        _pillarDeleteTimers.set(pillarId, timer);
       }
     }
 
