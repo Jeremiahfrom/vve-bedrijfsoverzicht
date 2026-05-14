@@ -870,6 +870,7 @@
 
     function toggleTask(taskId) {
       const p = getPillar(state.activePillar);
+      if (!p) return;
       const found = findTask(p.tasks, taskId);
       if (!found || found.task.children.length > 0) return; // auto-computed parents are read-only
       found.task.done = !found.task.done;
@@ -885,6 +886,7 @@
       if (parentTaskId) {
         const found = findTask(p.tasks, parentTaskId);
         if (found) found.task.children.push(newTask);
+        else p.tasks.push(newTask);
       } else {
         p.tasks.push(newTask);
       }
@@ -896,6 +898,7 @@
 
     function addSubtask() {
       const p = getPillar(state.activePillar);
+      if (!p) return;
       const parentId = rightPath.length > 0 ? rightPath[rightPath.length - 1] : selectedTaskId;
       if (!parentId) return;
       addTask(p.id, parentId);
@@ -903,6 +906,7 @@
 
     function startEditTask(taskId, isNew = false) {
       const p = getPillar(state.activePillar);
+      if (!p) return;
       const found = findTask(p.tasks, taskId);
       if (!found) return;
       const task = found.task;
@@ -962,6 +966,7 @@
 
     function deleteTask(taskId, silent = false) {
       const p = getPillar(state.activePillar);
+      if (!p) return;
       removeTaskById(p.tasks, taskId);
       if (selectedTaskId === taskId) { selectedTaskId = null; rightPath = []; }
       rightPath = rightPath.filter(id => id !== taskId);
