@@ -865,21 +865,29 @@
       expandPanel();
     }
 
-    // ─── CRUD ────────────────────────────────────────────────────────────────
+    // ─── Task CRUD ────────────────────────────────────────────────────────────────
+    const _deleteConfirm = new Set();
+
     function toggleTask(taskId) {
-      if (!state.activePillar) return;
-      const found = findTask(getPillar(state.activePillar).tasks, taskId);
-      if (!found) return;
+      const p = getPillar(state.activePillar);
+      const found = findTask(p.tasks, taskId);
+      if (!found || found.task.children.length > 0) return; // auto-computed parents are read-only
       found.task.done = !found.task.done;
       saveData();
-      if (typeof renderCanvas === 'function') renderCanvas();
+      renderCanvas();
       renderDetailPanel();
       expandPanel();
     }
 
-    function addTask(pillarId, parentId) {
+    function addTask(pillarId, parentTaskId) {
+      const p = getPillar(pillarId);
       const newTask = { id: generateId(), label: '', done: false, phase: 1, children: [] };
-      getPillar(pillarId).tasks.push(newTask);
+      if (parentTaskId) {
+        const found = findTask(p.tasks, parentTaskId);
+        if (found) found.task.children.push(newTask);
+      } else {
+        p.tasks.push(newTask);
+      }
       saveData();
       renderDetailPanel();
       expandPanel();
@@ -887,18 +895,22 @@
     }
 
     function addSubtask() {
-      // Stub — full implementation in Task 6
+      const p = getPillar(state.activePillar);
+      const parentId = rightPath.length > 0 ? rightPath[rightPath.length - 1] : selectedTaskId;
+      if (!parentId) return;
+      addTask(p.id, parentId);
     }
 
     function startEditTask(taskId, isNew = false) {
-      if (!state.activePillar) return;
-      const found = findTask(getPillar(state.activePillar).tasks, taskId);
+      const p = getPillar(state.activePillar);
+      const found = findTask(p.tasks, taskId);
       if (!found) return;
       const task = found.task;
-      const row = document.getElementById(`task-${taskId}`);
-      if (!row) return;
-      const labelEl = row.querySelector('.task-label');
+      const el = document.getElementById(`task-${taskId}`);
+      if (!el) return;
+      const labelEl = el.querySelector('.task-label');
       if (!labelEl) return;
+
       const input = document.createElement('input');
       input.type = 'text';
       input.className = 'task-label-input';
@@ -913,9 +925,10 @@
         if (saved) return;
         saved = true;
         const v = input.value.trim();
-        if (!v && isNew) { confirmDeleteTask(taskId, true); return; }
+        if (!v && isNew) { deleteTask(taskId, true); return; }
         task.label = v || task.label;
         saveData();
+        renderCanvas();
         renderDetailPanel();
         expandPanel();
       };
@@ -923,17 +936,14 @@
         if (e.key === 'Enter') { e.preventDefault(); save(); }
         if (e.key === 'Escape') {
           saved = true;
-          if (isNew) { confirmDeleteTask(taskId, true); }
+          if (isNew) deleteTask(taskId, true);
           else { renderDetailPanel(); expandPanel(); }
         }
       });
       input.addEventListener('blur', save);
     }
 
-    const _deleteConfirm = new Set();
-
-    function confirmDeleteTask(taskId, silent = false) {
-      if (silent) { deleteTask(taskId, true); return; }
+    function confirmDeleteTask(taskId) {
       const btn = document.getElementById(`del-${taskId}`);
       if (!btn) return;
       if (_deleteConfirm.has(taskId)) {
@@ -942,26 +952,21 @@
       } else {
         _deleteConfirm.add(taskId);
         btn.classList.add('delete-confirm');
-        btn.title = 'Nogmaals klikken bevestigt verwijdering';
         setTimeout(() => {
           _deleteConfirm.delete(taskId);
           const b = document.getElementById(`del-${taskId}`);
-          if (b) { b.classList.remove('delete-confirm'); b.title = 'Verwijderen'; }
+          if (b) b.classList.remove('delete-confirm');
         }, 2500);
       }
     }
 
     function deleteTask(taskId, silent = false) {
-      if (!state.activePillar) return;
       const p = getPillar(state.activePillar);
       removeTaskById(p.tasks, taskId);
-      // Reset navigation state if deleted task was selected
       if (selectedTaskId === taskId) { selectedTaskId = null; rightPath = []; }
       rightPath = rightPath.filter(id => id !== taskId);
       saveData();
-      if (typeof renderCanvas === 'function') renderCanvas();
-      renderDetailPanel();
-      if (!silent) expandPanel();
+      if (!silent) { renderCanvas(); renderDetailPanel(); expandPanel(); }
     }
 
     // ─── Roadmap ─────────────────────────────────────────────────────────────
