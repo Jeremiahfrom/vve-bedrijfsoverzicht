@@ -387,8 +387,26 @@
     .btn-reset:hover { border-color: rgba(200,60,60,0.45); color: #e07070; }
 
     /* RESPONSIVE */
-    @media (max-width: 620px) {
+    @media (max-width: 600px) {
       header { flex-direction: column; align-items: flex-start; }
+      .header-controls { width: 100%; justify-content: space-between; }
+      #canvas-container {
+        background-image: none;
+        min-height: unset;
+        border: none;
+      }
+      #canvas-nodes {
+        display: grid !important;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        padding: 8px;
+        min-height: unset;
+        position: static !important;
+      }
+      .pillar-node { position: static !important; width: auto; }
+      .add-pillar-node { position: static !important; width: auto; }
+      .detail-split { grid-template-columns: 1fr; }
+      .detail-col-left { border-right: none; border-bottom: 1px solid rgba(200,169,110,0.12); }
     }
   </style>
 </head>
