@@ -192,117 +192,95 @@
     .add-pillar-icon { font-size: 22px; color: var(--gold); line-height: 1; }
     .add-pillar-label { font-size: 10px; color: rgba(200,169,110,0.7); }
 
-    /* DETAIL PANEL */
+    /* ── Detail Panel ───────────────────────────────────────────────────────── */
     #detail-panel {
-      background: rgba(200,169,110,0.06);
-      border: 1px solid rgba(200,169,110,0.25);
+      background: rgba(200,169,110,0.05);
+      border: 1px solid rgba(200,169,110,0.2);
       border-radius: var(--radius);
       overflow: hidden;
       max-height: 0;
       opacity: 0;
       transition: max-height 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.25s;
     }
-
     #detail-panel.open { opacity: 1; }
-
-    .detail-inner { padding: 18px 18px 14px; }
-
-    .detail-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 14px;
+    .detail-split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 200px;
     }
-
-    .detail-title {
-      font-family: 'Fraunces', serif;
-      font-size: 17px;
-      font-weight: 400;
-      color: var(--cream);
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .detail-col { padding: 16px; display: flex; flex-direction: column; gap: 4px; }
+    .detail-col-left { border-right: 1px solid rgba(200,169,110,0.12); }
+    .detail-col-header {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: rgba(200,169,110,0.6); margin-bottom: 8px;
     }
-
-    .btn-add {
-      background: var(--gold-15);
-      border: 1px solid var(--gold-40);
-      border-radius: 6px;
-      padding: 5px 12px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--gold);
-      cursor: pointer;
-      transition: background 0.15s;
-      white-space: nowrap;
+    .breadcrumb {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 10px; flex-wrap: wrap; margin-bottom: 8px; min-height: 16px;
     }
-
-    .btn-add:hover { background: var(--gold-25); }
-
-    .task-list { display: flex; flex-direction: column; gap: 5px; }
-
+    .breadcrumb-crumb { color: var(--gold); cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+    .breadcrumb-sep { color: rgba(245,240,232,0.3); }
+    .breadcrumb-current { color: rgba(245,240,232,0.7); }
     .task-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 10px;
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 9px;
       background: rgba(255,255,255,0.03);
       border-radius: var(--radius-sm);
-      transition: background 0.1s;
-    }
-
-    .task-row:hover { background: rgba(255,255,255,0.06); }
-
-    .task-check {
-      width: 17px; height: 17px;
-      border: 1.5px solid rgba(200,169,110,0.45);
-      border-radius: 4px;
-      flex-shrink: 0;
+      border: 1px solid transparent;
       cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: background 0.15s, border-color 0.15s;
-      background: transparent;
+      transition: background 0.1s, border-color 0.1s;
     }
-
+    .task-row:hover { background: rgba(255,255,255,0.06); }
+    .task-row.selected { background: rgba(200,169,110,0.1); border-color: rgba(200,169,110,0.35); }
+    .task-check {
+      width: 16px; height: 16px;
+      border: 1.5px solid rgba(200,169,110,0.4); border-radius: 3px;
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 10px; transition: background 0.15s, border-color 0.15s;
+    }
     .task-check.done { background: var(--gold); border-color: var(--gold); color: var(--navy); }
-    .task-check.done::after { content: '✓'; font-size: 11px; font-weight: 900; line-height: 1; }
-
-    .task-label { flex: 1; font-size: 13px; color: var(--cream-85); line-height: 1.4; }
+    .task-check.done::after { content: '✓'; font-weight: 900; }
+    .task-check.auto { opacity: 0.6; cursor: default; }
+    .task-label { flex: 1; font-size: 12px; color: var(--cream-85); line-height: 1.35; }
     .task-label.done { text-decoration: line-through; color: var(--cream-30); }
-
     .task-label-input {
-      flex: 1;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid var(--gold-40);
-      border-radius: 4px;
-      padding: 3px 8px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 13px;
-      color: var(--cream);
-      outline: none;
+      flex: 1; background: rgba(255,255,255,0.08);
+      border: 1px solid var(--gold-40); border-radius: 4px;
+      padding: 2px 7px; font-family: 'DM Sans', sans-serif;
+      font-size: 12px; color: var(--cream); outline: none;
     }
-
     .task-label-input:focus { border-color: var(--gold); }
-
-    .task-icons { display: flex; gap: 4px; flex-shrink: 0; opacity: 0; transition: opacity 0.15s; }
+    .task-chevron { font-size: 10px; color: rgba(245,240,232,0.3); flex-shrink: 0; }
+    .task-chevron.has-children { color: var(--gold); }
+    .task-icons {
+      display: flex; gap: 3px; flex-shrink: 0;
+      opacity: 0; transition: opacity 0.15s;
+    }
     .task-row:hover .task-icons,
     .task-row:focus-within .task-icons { opacity: 1; }
-
     .task-icon {
-      width: 26px; height: 26px;
-      border-radius: 4px;
-      background: rgba(200,169,110,0.08);
-      border: none;
+      width: 22px; height: 22px; border-radius: 4px;
+      background: rgba(200,169,110,0.07); border: none;
       display: flex; align-items: center; justify-content: center;
-      font-size: 12px;
-      cursor: pointer;
-      color: rgba(200,169,110,0.6);
+      font-size: 11px; cursor: pointer; color: rgba(200,169,110,0.55);
       transition: background 0.15s, color 0.15s;
     }
-
     .task-icon:hover { background: var(--gold-15); color: var(--gold); }
     .task-icon.delete-confirm { background: rgba(220,60,60,0.18); color: #e07070; }
+    .btn-add-task {
+      margin-top: 4px; padding: 6px 10px;
+      border-radius: var(--radius-sm); border: 1px dashed rgba(200,169,110,0.3);
+      background: none; font-family: 'DM Sans', sans-serif;
+      font-size: 11px; font-weight: 500; color: rgba(200,169,110,0.6);
+      cursor: pointer; text-align: left;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-add-task:hover { border-color: var(--gold); color: var(--gold); }
+    .detail-empty {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: rgba(245,240,232,0.2); text-align: center; padding: 24px;
+    }
 
     /* ROADMAP VIEW */
     #roadmap-view { display: none; }
@@ -741,14 +719,18 @@
     function addPillar() {}
     function renderRoadmapLegend() {}
 
-    // ─── Detail Panel ────────────────────────────────────────────────────────
+    // ─── Detail Panel ─────────────────────────────────────────────────────────────
     function activatePillar(id) {
       if (state.activePillar === id) {
         state.activePillar = null;
+        selectedTaskId = null;
+        rightPath = [];
         collapsePanel();
       } else {
         state.activePillar = id;
-        if (typeof renderCanvas === 'function') renderCanvas();
+        selectedTaskId = null;
+        rightPath = [];
+        renderCanvas();
         renderDetailPanel();
         expandPanel();
       }
@@ -758,7 +740,7 @@
     function expandPanel() {
       const panel = document.getElementById('detail-panel');
       panel.classList.add('open');
-      panel.style.maxHeight = panel.scrollHeight + 200 + 'px';
+      setTimeout(() => { panel.style.maxHeight = panel.scrollHeight + 300 + 'px'; }, 0);
     }
 
     function collapsePanel() {
@@ -771,39 +753,120 @@
     function renderDetailPanel() {
       if (!state.activePillar) return;
       const p = getPillar(state.activePillar);
+      if (!p) return;
       const panel = document.getElementById('detail-panel');
+
+      // Determine what the right column shows
+      let rightTasks = null;
+      if (rightPath.length > 0) {
+        const deepTask = findTask(p.tasks, rightPath[rightPath.length - 1]);
+        if (deepTask) rightTasks = deepTask.task.children;
+      } else if (selectedTaskId) {
+        const sel = findTask(p.tasks, selectedTaskId);
+        if (sel) rightTasks = sel.task.children;
+      }
+
+      // Build breadcrumb HTML
+      let crumbs = `<span class="breadcrumb-crumb" onclick="resetRightPanel()">${escHtml(p.icon)} ${escHtml(p.label)}</span>`;
+      if (selectedTaskId) {
+        const sel = findTask(p.tasks, selectedTaskId);
+        if (sel) {
+          if (rightPath.length > 0) {
+            crumbs += `<span class="breadcrumb-sep">›</span>
+              <span class="breadcrumb-crumb" onclick="selectTask('${selectedTaskId}')">${escHtml(sel.task.label)}</span>`;
+            rightPath.forEach((rid, i) => {
+              const rt = findTask(p.tasks, rid);
+              if (!rt) return;
+              const isLast = i === rightPath.length - 1;
+              const cls = isLast ? 'breadcrumb-current' : 'breadcrumb-crumb';
+              const onclick = isLast ? '' : `onclick="navigateRightTo('${rid}',${i})"`;
+              crumbs += `<span class="breadcrumb-sep">›</span>
+                <span class="${cls}" ${onclick}>${escHtml(rt.task.label)}</span>`;
+            });
+          } else {
+            crumbs += `<span class="breadcrumb-sep">›</span>
+              <span class="breadcrumb-current">${escHtml(sel.task.label)}</span>`;
+          }
+        }
+      }
+
       panel.innerHTML = `
-        <div class="detail-inner">
-          <div class="detail-header">
-            <div class="detail-title">${p.icon} ${escHtml(p.label)}</div>
-            <button class="btn-add" onclick="addTask('${p.id}')">+ Taak toevoegen</button>
+        <div class="detail-split">
+          <div class="detail-col detail-col-left">
+            <div class="detail-col-header">${escHtml(p.icon)} ${escHtml(p.label)}</div>
+            ${p.tasks.map(t => taskRowHtml(t, true)).join('')}
+            <button class="btn-add-task" onclick="addTask('${p.id}', null)">+ taak toevoegen</button>
           </div>
-          <div class="task-list" id="task-list-${p.id}">
-            ${p.tasks.map(t => taskRowHtml(p.id, t)).join('')}
+          <div class="detail-col detail-col-right">
+            <div class="breadcrumb">${crumbs}</div>
+            ${rightTasks === null
+              ? '<div class="detail-empty">Selecteer een taak om subtaken te zien</div>'
+              : rightTasks.length === 0
+                ? `<div class="detail-empty">Geen subtaken</div>
+                   <button class="btn-add-task" onclick="addSubtask()">+ subtaak toevoegen</button>`
+                : rightTasks.map(t => taskRowHtml(t, false)).join('') +
+                  `<button class="btn-add-task" onclick="addSubtask()">+ subtaak toevoegen</button>`
+            }
           </div>
         </div>`;
-      setTimeout(() => {
-        panel.style.maxHeight = panel.scrollHeight + 'px';
-      }, 0);
+      setTimeout(() => { panel.style.maxHeight = panel.scrollHeight + 300 + 'px'; }, 0);
     }
 
-    function taskRowHtml(pillarId, task) {
+    function taskRowHtml(task, isLeft) {
+      const hasChildren = task.children && task.children.length > 0;
+      const isAuto = hasChildren;
+      const isDone = isAuto ? allLeavesDone(task) : task.done;
+      const isSelected = isLeft && task.id === selectedTaskId;
+      const clickFn = isLeft ? `selectTask('${task.id}')` : `navigateInto('${task.id}')`;
+
       return `
-        <div class="task-row" id="task-${task.id}">
-          <div class="task-check${task.done ? ' done' : ''}"
-            onclick="toggleTask('${pillarId}','${task.id}')"></div>
-          <div class="task-label${task.done ? ' done' : ''}">${escHtml(task.label)}</div>
-          <div class="task-icons">
-            <button class="task-icon" onclick="startEdit('${pillarId}','${task.id}')" title="Wijzigen">&#9998;</button>
-            <button class="task-icon" onclick="confirmDelete('${pillarId}','${task.id}')"
-              title="Verwijderen" id="del-${task.id}">&#128465;</button>
+        <div class="task-row${isSelected ? ' selected' : ''}" id="task-${task.id}" onclick="${clickFn}">
+          <div class="task-check${isDone ? ' done' : ''}${isAuto ? ' auto' : ''}"
+               onclick="${isAuto ? 'event.stopPropagation()' : `event.stopPropagation();toggleTask('${task.id}')`}">
+            ${isDone ? '✓' : ''}
+          </div>
+          <div class="task-label${isDone ? ' done' : ''}">${escHtml(task.label)}</div>
+          <span class="task-chevron${hasChildren ? ' has-children' : ''}">
+            ${hasChildren ? '› ' + task.children.length : '›'}
+          </span>
+          <div class="task-icons" style="display:${editMode ? 'flex' : 'none'}">
+            <button class="task-icon" onclick="event.stopPropagation();startEditTask('${task.id}')" title="Wijzigen">✏</button>
+            <button class="task-icon" id="del-${task.id}"
+              onclick="event.stopPropagation();confirmDeleteTask('${task.id}')" title="Verwijderen">🗑</button>
           </div>
         </div>`;
+    }
+
+    function selectTask(taskId) {
+      selectedTaskId = taskId;
+      rightPath = [];
+      renderDetailPanel();
+      expandPanel();
+    }
+
+    function navigateInto(taskId) {
+      rightPath.push(taskId);
+      renderDetailPanel();
+      expandPanel();
+    }
+
+    function navigateRightTo(taskId, index) {
+      rightPath = rightPath.slice(0, index + 1);
+      renderDetailPanel();
+      expandPanel();
+    }
+
+    function resetRightPanel() {
+      selectedTaskId = null;
+      rightPath = [];
+      renderDetailPanel();
+      expandPanel();
     }
 
     // ─── CRUD ────────────────────────────────────────────────────────────────
-    function toggleTask(pillarId, taskId) {
-      const found = findTask(getPillar(pillarId).tasks, taskId);
+    function toggleTask(taskId) {
+      if (!state.activePillar) return;
+      const found = findTask(getPillar(state.activePillar).tasks, taskId);
       if (!found) return;
       found.task.done = !found.task.done;
       saveData();
@@ -812,22 +875,28 @@
       expandPanel();
     }
 
-    function addTask(pillarId) {
+    function addTask(pillarId, parentId) {
       const newTask = { id: generateId(), label: '', done: false, phase: 1, children: [] };
       getPillar(pillarId).tasks.push(newTask);
       saveData();
       renderDetailPanel();
       expandPanel();
-      setTimeout(() => startEdit(pillarId, newTask.id, true), 30);
+      setTimeout(() => startEditTask(newTask.id, true), 30);
     }
 
-    function startEdit(pillarId, taskId, isNew = false) {
-      const found = findTask(getPillar(pillarId).tasks, taskId);
+    function addSubtask() {
+      // Stub — full implementation in Task 6
+    }
+
+    function startEditTask(taskId, isNew = false) {
+      if (!state.activePillar) return;
+      const found = findTask(getPillar(state.activePillar).tasks, taskId);
       if (!found) return;
       const task = found.task;
       const row = document.getElementById(`task-${taskId}`);
       if (!row) return;
       const labelEl = row.querySelector('.task-label');
+      if (!labelEl) return;
       const input = document.createElement('input');
       input.type = 'text';
       input.className = 'task-label-input';
@@ -842,7 +911,7 @@
         if (saved) return;
         saved = true;
         const v = input.value.trim();
-        if (!v && isNew) { deleteTask(pillarId, taskId, true); return; }
+        if (!v && isNew) { confirmDeleteTask(taskId, true); return; }
         task.label = v || task.label;
         saveData();
         renderDetailPanel();
@@ -852,7 +921,7 @@
         if (e.key === 'Enter') { e.preventDefault(); save(); }
         if (e.key === 'Escape') {
           saved = true;
-          if (isNew) { deleteTask(pillarId, taskId, true); }
+          if (isNew) { confirmDeleteTask(taskId, true); }
           else { renderDetailPanel(); expandPanel(); }
         }
       });
@@ -861,11 +930,12 @@
 
     const _deleteConfirm = new Set();
 
-    function confirmDelete(pillarId, taskId) {
+    function confirmDeleteTask(taskId, silent = false) {
+      if (silent) { deleteTask(taskId, true); return; }
       const btn = document.getElementById(`del-${taskId}`);
       if (!btn) return;
       if (_deleteConfirm.has(taskId)) {
-        deleteTask(pillarId, taskId);
+        deleteTask(taskId);
         _deleteConfirm.delete(taskId);
       } else {
         _deleteConfirm.add(taskId);
@@ -879,9 +949,12 @@
       }
     }
 
-    function deleteTask(pillarId, taskId, silent = false) {
-      const p = getPillar(pillarId);
+    function deleteTask(taskId, silent = false) {
+      if (!state.activePillar) return;
+      const p = getPillar(state.activePillar);
       removeTaskById(p.tasks, taskId);
+      // Reset navigation state if deleted task was selected
+      if (selectedTaskId === taskId) { selectedTaskId = null; rightPath = []; }
       saveData();
       if (typeof renderCanvas === 'function') renderCanvas();
       renderDetailPanel();
