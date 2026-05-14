@@ -181,6 +181,39 @@
     }
     .node-edit-btn:hover { background: var(--gold-25); color: var(--gold); }
     .node-edit-btn.delete-confirm { background: rgba(220,60,60,0.18); color: #e07070; border-color: rgba(220,60,60,0.3); }
+    .pillar-edit-form {
+      position: absolute;
+      bottom: calc(100% + 8px); left: 50%;
+      transform: translateX(-50%);
+      background: #162535;
+      border: 1px solid rgba(200,169,110,0.3);
+      border-radius: 10px; padding: 12px;
+      display: flex; flex-direction: column; gap: 8px;
+      width: 180px; z-index: 100;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    .pillar-edit-form input[type=text] {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(200,169,110,0.3); border-radius: 5px;
+      padding: 5px 9px; font-family: 'DM Sans', sans-serif;
+      font-size: 12px; color: var(--cream); outline: none; width: 100%;
+    }
+    .pillar-edit-form input[type=text]:focus { border-color: var(--gold); }
+    .color-swatches { display: flex; gap: 5px; flex-wrap: wrap; }
+    .color-swatch {
+      width: 20px; height: 20px; border-radius: 50%;
+      cursor: pointer; border: 2px solid transparent;
+      transition: border-color 0.15s, transform 0.1s;
+    }
+    .color-swatch:hover { transform: scale(1.15); }
+    .color-swatch.selected { border-color: white; }
+    .pillar-edit-save {
+      padding: 5px; border-radius: 5px;
+      background: var(--gold-25); border: 1px solid var(--gold-40);
+      color: var(--gold); font-family: 'DM Sans', sans-serif;
+      font-size: 11px; font-weight: 600; cursor: pointer;
+    }
+    .pillar-edit-save:hover { background: var(--gold-40); }
     .add-pillar-node {
       position: absolute; width: 80px; padding: 12px 8px;
       border-radius: 14px; border: 1.5px dashed rgba(200,169,110,0.3);
@@ -715,11 +748,105 @@
       document.addEventListener('mouseup', onMouseUp);
     }
 
-    // Stubs — full implementation added in Task 7 (Pillar CRUD)
-    function editPillar(e, pillarId) { e.stopPropagation(); }
-    function confirmDeletePillar(e, pillarId) { e.stopPropagation(); }
-    function addPillar() {}
-    function renderRoadmapLegend() {}
+    // ─── Pillar CRUD ──────────────────────────────────────────────────────────────
+    const _pillarDeleteConfirm = new Set();
+
+    function editPillar(e, pillarId) {
+      e.stopPropagation();
+      document.querySelectorAll('.pillar-edit-form').forEach(f => f.remove());
+      const p = getPillar(pillarId);
+      const node = document.getElementById(`node-${pillarId}`);
+
+      const form = document.createElement('div');
+      form.className = 'pillar-edit-form';
+      form.innerHTML = `
+        <input type="text" id="edit-icon-${escHtml(pillarId)}" value="${escHtml(p.icon)}" placeholder="Icoon (emoji)" maxlength="4">
+        <input type="text" id="edit-label-${escHtml(pillarId)}" value="${escHtml(p.label)}" placeholder="Naam">
+        <div class="color-swatches">
+          ${PRESET_COLORS.map(c =>
+            `<div class="color-swatch${c === p.color ? ' selected' : ''}" style="background:${escHtml(c)}" data-color="${escHtml(c)}"
+                 onclick="this.closest('.color-swatches').querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('selected'));this.classList.add('selected')"></div>`
+          ).join('')}
+        </div>
+        <button class="pillar-edit-save" onclick="savePillarEdit('${escHtml(pillarId)}')">Opslaan</button>`;
+
+      node.appendChild(form);
+      document.getElementById(`edit-label-${pillarId}`).focus();
+
+      setTimeout(() => {
+        document.addEventListener('click', function closeForm(ev) {
+          if (!form.contains(ev.target)) {
+            form.remove();
+            document.removeEventListener('click', closeForm);
+          }
+        });
+      }, 10);
+    }
+
+    function savePillarEdit(pillarId) {
+      const p = getPillar(pillarId);
+      if (!p) return;
+      const icon = document.getElementById(`edit-icon-${pillarId}`).value.trim();
+      const label = document.getElementById(`edit-label-${pillarId}`).value.trim();
+      const selectedSwatch = document.querySelector(`#node-${pillarId} .color-swatch.selected`);
+      if (icon) p.icon = icon;
+      if (label) p.label = label;
+      if (selectedSwatch) p.color = selectedSwatch.dataset.color;
+      document.querySelectorAll('.pillar-edit-form').forEach(f => f.remove());
+      saveData();
+      renderCanvas();
+      if (state.activePillar === pillarId) renderDetailPanel();
+      renderRoadmapLegend();
+    }
+
+    function confirmDeletePillar(e, pillarId) {
+      e.stopPropagation();
+      const btn = document.getElementById(`node-del-${pillarId}`);
+      if (!btn) return;
+      if (_pillarDeleteConfirm.has(pillarId)) {
+        state.pillars = state.pillars.filter(p => p.id !== pillarId);
+        if (state.activePillar === pillarId) { state.activePillar = null; collapsePanel(); }
+        _pillarDeleteConfirm.delete(pillarId);
+        saveData();
+        renderCanvas();
+        renderRoadmapLegend();
+      } else {
+        _pillarDeleteConfirm.add(pillarId);
+        btn.classList.add('delete-confirm');
+        setTimeout(() => {
+          _pillarDeleteConfirm.delete(pillarId);
+          const b = document.getElementById(`node-del-${pillarId}`);
+          if (b) b.classList.remove('delete-confirm');
+        }, 2500);
+      }
+    }
+
+    function addPillar() {
+      const usedColors = state.pillars.map(p => p.color);
+      const color = PRESET_COLORS.find(c => !usedColors.includes(c)) || PRESET_COLORS[0];
+      const lastPillar = state.pillars[state.pillars.length - 1];
+      const x = lastPillar ? (lastPillar.position.x + 130) : 60;
+      const y = lastPillar ? lastPillar.position.y : 60;
+      const newPillar = { id: generateId(), icon: '📌', label: 'Nieuwe pilaar', color, position: { x, y }, tasks: [] };
+      state.pillars.push(newPillar);
+      saveData();
+      renderCanvas();
+      setTimeout(() => {
+        const btn = document.querySelector(`#node-${newPillar.id} .node-edit-btn`);
+        if (btn) btn.click();
+      }, 50);
+    }
+
+    function renderRoadmapLegend() {
+      const legend = document.getElementById('roadmap-legend');
+      if (!legend) return;
+      legend.innerHTML = state.pillars.map(p =>
+        `<div class="legend-item">
+           <div class="legend-dot" style="background:${escHtml(p.color)}"></div>
+           <span>${escHtml(p.icon)} ${escHtml(p.label)}</span>
+         </div>`
+      ).join('');
+    }
 
     // ─── Detail Panel ─────────────────────────────────────────────────────────────
     function activatePillar(id) {
