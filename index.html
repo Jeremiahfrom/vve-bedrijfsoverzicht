@@ -84,6 +84,64 @@
 
     .toggle-btn.active { background: var(--gold-15); color: var(--gold); }
 
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .edit-btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gold);
+      background: var(--gold-15);
+      border: 1px solid var(--gold-40);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .edit-btn:hover { background: var(--gold-25); }
+
+    .edit-done-btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: #5dd9a0;
+      background: rgba(93,217,160,0.12);
+      border: 1px solid rgba(93,217,160,0.35);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .edit-done-btn:hover { background: rgba(93,217,160,0.2); }
+
+    /* CANVAS */
+    #canvas-container {
+      position: relative;
+      min-height: 200px;
+    }
+
+    .add-pillar-node {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 80px;
+      height: 80px;
+      border: 2px dashed var(--gold-40);
+      border-radius: var(--radius);
+      cursor: pointer;
+      margin: 12px auto;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .add-pillar-node:hover { border-color: var(--gold); background: var(--gold-15); }
+    .add-pillar-icon { font-size: 24px; color: var(--gold-40); line-height: 1; }
+    .add-pillar-label { font-size: 10px; color: var(--gold-40); margin-top: 2px; letter-spacing: 0.05em; }
+
     /* RINGS ROW */
     .rings-row {
       display: grid;
@@ -378,23 +436,29 @@
   <div id="app">
     <header>
       <h1 class="app-title">VvE Beheer <em>Collectief</em></h1>
-      <div class="view-toggle">
-        <button class="toggle-btn active" onclick="switchView('dashboard')">Dashboard</button>
-        <button class="toggle-btn" onclick="switchView('roadmap')">Roadmap</button>
+      <div class="header-controls">
+        <div class="view-toggle">
+          <button class="toggle-btn active" onclick="switchView('dashboard')">Dashboard</button>
+          <button class="toggle-btn" onclick="switchView('roadmap')">Roadmap</button>
+        </div>
+        <button class="edit-btn" id="edit-toggle-btn" onclick="toggleEditMode()">✏ Bewerken</button>
+        <button class="edit-done-btn" id="edit-done-btn" onclick="toggleEditMode()" style="display:none">✓ Klaar</button>
       </div>
     </header>
 
     <div id="dashboard-view">
-      <div class="rings-row" id="rings-row"></div>
+      <div id="canvas-container">
+        <div id="canvas-nodes"></div>
+        <div id="add-pillar-node" class="add-pillar-node" onclick="addPillar()" style="display:none">
+          <div class="add-pillar-icon">+</div>
+          <div class="add-pillar-label">pilaar</div>
+        </div>
+      </div>
       <div id="detail-panel"></div>
     </div>
 
-    <div id="roadmap-view">
-      <div class="roadmap-legend">
-        <span><span class="legend-dot" style="background:#c8a96e;"></span>Brand</span>
-        <span><span class="legend-dot" style="background:#7ab8d4;"></span>Website</span>
-        <span><span class="legend-dot" style="background:#7dc892;"></span>Automation</span>
-      </div>
+    <div id="roadmap-view" style="display:none">
+      <div id="roadmap-legend"></div>
       <div id="roadmap-container"></div>
     </div>
 
@@ -564,6 +628,19 @@
       }
       data.activePillar = v1.activePillar || null;
       return data;
+    }
+
+    // ─── Edit Mode ────────────────────────────────────────────────────────────────
+    let editMode = false;
+
+    function toggleEditMode() {
+      editMode = !editMode;
+      document.getElementById('edit-toggle-btn').style.display = editMode ? 'none' : '';
+      document.getElementById('edit-done-btn').style.display = editMode ? '' : 'none';
+      document.getElementById('add-pillar-node').style.display = editMode ? 'flex' : 'none';
+      if (typeof renderCanvas === 'function') renderCanvas();
+      if (state.activePillar && typeof renderDetailPanel === 'function') renderDetailPanel();
+      if (typeof renderRoadmap === 'function') renderRoadmap();
     }
 
     // ─── Rings ───────────────────────────────────────────────────────────────
@@ -781,12 +858,12 @@
       const btns = document.querySelectorAll('.toggle-btn');
       if (view === 'dashboard') {
         dash.style.display = 'block';
-        road.classList.remove('visible');
+        road.style.display = 'none';
         btns[0].classList.add('active');
         btns[1].classList.remove('active');
       } else {
         dash.style.display = 'none';
-        road.classList.add('visible');
+        road.style.display = 'block';
         btns[1].classList.add('active');
         btns[0].classList.remove('active');
         renderRoadmap();
@@ -796,9 +873,13 @@
     // ─── Reset ───────────────────────────────────────────────────────────────
     function resetData() {
       if (!confirm('Alle voortgang wissen en terug naar de standaard taken? Dit kan niet ongedaan worden gemaakt.')) return;
-      localStorage.removeItem(STORAGE_KEY_V1);
       localStorage.removeItem(STORAGE_KEY_V2);
+      localStorage.removeItem(STORAGE_KEY_V1);
       state = deepClone(DEFAULT_DATA);
+      editMode = false;
+      document.getElementById('edit-toggle-btn').style.display = '';
+      document.getElementById('edit-done-btn').style.display = 'none';
+      document.getElementById('add-pillar-node').style.display = 'none';
       init();
     }
 
@@ -806,10 +887,14 @@
     function init() {
       state = loadData();
       switchView('dashboard');
-      renderRings();
-      if (state.activePillar) {
+      if (typeof renderCanvas === 'function') {
+        renderCanvas();
+      } else if (typeof renderRings === 'function' && document.getElementById('rings-row')) {
+        renderRings();
+      }
+      if (state.activePillar && typeof renderDetailPanel === 'function') {
         renderDetailPanel();
-        expandPanel();
+        if (typeof expandPanel === 'function') expandPanel();
       }
     }
 
