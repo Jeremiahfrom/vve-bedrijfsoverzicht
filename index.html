@@ -321,7 +321,6 @@
 
     /* ROADMAP VIEW */
     #roadmap-view { display: none; }
-    #roadmap-view.visible { display: block; }
 
     .roadmap-legend {
       font-size: 12px;
@@ -449,7 +448,7 @@
     <div id="dashboard-view">
       <div id="canvas-container">
         <div id="canvas-nodes"></div>
-        <div id="add-pillar-node" class="add-pillar-node" onclick="addPillar()" style="display:none">
+        <div id="add-pillar-node" class="add-pillar-node" onclick="if(typeof addPillar==='function') addPillar()" style="display:none">
           <div class="add-pillar-icon">+</div>
           <div class="add-pillar-label">pilaar</div>
         </div>
@@ -679,7 +678,7 @@
         collapsePanel();
       } else {
         state.activePillar = id;
-        renderRings();
+        if (typeof renderCanvas === 'function') renderCanvas();
         renderDetailPanel();
         expandPanel();
       }
@@ -696,7 +695,7 @@
       const panel = document.getElementById('detail-panel');
       panel.classList.remove('open');
       panel.style.maxHeight = '0';
-      renderRings();
+      if (typeof renderCanvas === 'function') renderCanvas();
     }
 
     function renderDetailPanel() {
@@ -738,7 +737,7 @@
       if (!found) return;
       found.task.done = !found.task.done;
       saveData();
-      renderRings();
+      if (typeof renderCanvas === 'function') renderCanvas();
       renderDetailPanel();
       expandPanel();
     }
@@ -814,7 +813,7 @@
       const p = getPillar(pillarId);
       removeTaskById(p.tasks, taskId);
       saveData();
-      renderRings();
+      if (typeof renderCanvas === 'function') renderCanvas();
       renderDetailPanel();
       if (!silent) expandPanel();
     }
@@ -866,6 +865,18 @@
         road.style.display = 'block';
         btns[1].classList.add('active');
         btns[0].classList.remove('active');
+        // Simple legend until renderRoadmapLegend() is implemented in Task 8
+        const legend = document.getElementById('roadmap-legend');
+        if (legend && typeof renderRoadmapLegend === 'function') {
+          renderRoadmapLegend();
+        } else if (legend) {
+          legend.innerHTML = state.pillars.map(p =>
+            `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:rgba(245,240,232,0.5);margin-right:12px">
+              <span style="width:8px;height:8px;border-radius:50%;background:${p.color};display:inline-block"></span>
+              ${p.icon} ${p.label}
+            </span>`
+          ).join('');
+        }
         renderRoadmap();
       }
     }
@@ -889,8 +900,6 @@
       switchView('dashboard');
       if (typeof renderCanvas === 'function') {
         renderCanvas();
-      } else if (typeof renderRings === 'function' && document.getElementById('rings-row')) {
-        renderRings();
       }
       if (state.activePillar && typeof renderDetailPanel === 'function') {
         renderDetailPanel();
