@@ -649,7 +649,7 @@
               stroke-dasharray="${CIRC_NODE}" stroke-dashoffset="${offset}"
               style="transition:stroke-dashoffset 0.5s cubic-bezier(0.34,1.56,0.64,1)"/>
           </svg>
-          <div class="node-icon">${p.icon}</div>
+          <div class="node-icon">${escHtml(p.icon)}</div>
           <div class="node-ring-pct" style="color:${escHtml(p.color)}">${pct}%</div>
         </div>
         <div class="node-name">${escHtml(p.label)}</div>
@@ -734,6 +734,12 @@
       document.addEventListener('mousemove', onMouseMove);
       document.addEventListener('mouseup', onMouseUp);
     }
+
+    // Stubs — full implementation added in Task 7 (Pillar CRUD)
+    function editPillar(e, pillarId) { e.stopPropagation(); }
+    function confirmDeletePillar(e, pillarId) { e.stopPropagation(); }
+    function addPillar() {}
+    function renderRoadmapLegend() {}
 
     // ─── Detail Panel ────────────────────────────────────────────────────────
     function activatePillar(id) {
@@ -936,8 +942,8 @@
         } else if (legend) {
           legend.innerHTML = state.pillars.map(p =>
             `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:rgba(245,240,232,0.5);margin-right:12px">
-              <span style="width:8px;height:8px;border-radius:50%;background:${p.color};display:inline-block"></span>
-              ${p.icon} ${p.label}
+              <span style="width:8px;height:8px;border-radius:50%;background:${escHtml(p.color)};display:inline-block"></span>
+              ${escHtml(p.icon)} ${escHtml(p.label)}
             </span>`
           ).join('');
         }
