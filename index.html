@@ -119,93 +119,78 @@
     }
     .edit-done-btn:hover { background: rgba(93,217,160,0.2); }
 
-    /* CANVAS */
+    /* ── Canvas ─────────────────────────────────────────────────────────────── */
     #canvas-container {
       position: relative;
-      min-height: 200px;
+      width: 100%;
+      min-height: 220px;
+      margin-bottom: 16px;
+      background-image: radial-gradient(circle, rgba(200,169,110,0.12) 1px, transparent 1px);
+      background-size: 24px 24px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(200,169,110,0.1);
     }
-
-    .add-pillar-node {
-      display: none;
+    #canvas-nodes {
+      position: relative;
+      width: 100%;
+      min-height: 220px;
+    }
+    .pillar-node {
+      position: absolute;
+      display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      width: 80px;
-      height: 80px;
-      border: 2px dashed var(--gold-40);
-      border-radius: var(--radius);
+      gap: 5px;
       cursor: pointer;
-      margin: 12px auto;
-      transition: border-color 0.15s, background 0.15s;
-    }
-    .add-pillar-node:hover { border-color: var(--gold); background: var(--gold-15); }
-    .add-pillar-icon { font-size: 24px; color: var(--gold-40); line-height: 1; }
-    .add-pillar-label { font-size: 10px; color: var(--gold-40); margin-top: 2px; letter-spacing: 0.05em; }
-
-    /* RINGS ROW */
-    .rings-row {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-
-    .ring-card {
-      background: rgba(200,169,110,0.06);
-      border: 1px solid rgba(200,169,110,0.2);
-      border-radius: var(--radius);
-      padding: 16px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      cursor: pointer;
-      transition: border-color 0.2s, background 0.2s, transform 0.15s;
       user-select: none;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1.5px solid transparent;
+      width: 100px;
+      transition: border-color 0.2s, background 0.15s;
     }
-
-    .ring-card:hover { border-color: var(--gold-40); transform: translateY(-1px); }
-    .ring-card.active { border-color: var(--gold); background: rgba(200,169,110,0.1); }
-
-    .ring-wrap { position: relative; width: 56px; height: 56px; flex-shrink: 0; }
-    .ring-wrap svg { width: 56px; height: 56px; transform: rotate(-90deg); }
-    .ring-bg { fill: none; stroke: rgba(200,169,110,0.15); stroke-width: 4; }
-    .ring-fill {
-      fill: none;
-      stroke: var(--gold);
-      stroke-width: 4;
-      stroke-linecap: round;
-      transition: stroke-dashoffset 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-
-    .ring-pct {
+    .pillar-node:hover { border-color: rgba(200,169,110,0.35); background: rgba(200,169,110,0.04); }
+    .pillar-node.active { border-color: var(--gold); background: rgba(200,169,110,0.08); }
+    .pillar-node.dragging { opacity: 0.5; cursor: grabbing; }
+    .node-ring-wrap { position: relative; width: 64px; height: 64px; flex-shrink: 0; }
+    .node-ring-wrap svg { width: 64px; height: 64px; transform: rotate(-90deg); }
+    .node-ring-pct {
       position: absolute; inset: 0;
       display: flex; align-items: center; justify-content: center;
-      font-size: 13px; font-weight: 700; color: var(--gold);
+      font-size: 12px; font-weight: 700;
     }
-
-    .ring-info { flex: 1; min-width: 0; }
-
-    .ring-pillar-label {
-      font-size: 9px;
-      letter-spacing: 0.12em;
-      color: var(--gold);
-      font-weight: 700;
-      text-transform: uppercase;
-      margin-bottom: 2px;
+    .node-icon {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; pointer-events: none;
     }
-
-    .ring-name {
+    .node-name {
       font-family: 'Fraunces', serif;
-      font-size: 16px;
-      font-weight: 400;
-      color: var(--cream);
-      margin-bottom: 3px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-size: 13px; font-weight: 400;
+      text-align: center; color: var(--cream);
+      line-height: 1.2; max-width: 90px; word-break: break-word;
     }
-
-    .ring-count { font-size: 11px; color: var(--cream-50); }
+    .node-count { font-size: 10px; color: var(--cream-50); text-align: center; }
+    .node-edit-controls { display: none; gap: 4px; margin-top: 4px; }
+    .node-edit-btn {
+      width: 24px; height: 24px; border-radius: 5px;
+      background: rgba(200,169,110,0.1); border: 1px solid rgba(200,169,110,0.2);
+      color: rgba(200,169,110,0.7); font-size: 11px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .node-edit-btn:hover { background: var(--gold-25); color: var(--gold); }
+    .node-edit-btn.delete-confirm { background: rgba(220,60,60,0.18); color: #e07070; border-color: rgba(220,60,60,0.3); }
+    .add-pillar-node {
+      position: absolute; width: 80px; padding: 12px 8px;
+      border-radius: 14px; border: 1.5px dashed rgba(200,169,110,0.3);
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: 4px; cursor: pointer; opacity: 0.7; top: 60px;
+      transition: opacity 0.15s, border-color 0.15s;
+    }
+    .add-pillar-node:hover { opacity: 1; border-color: var(--gold); }
+    .add-pillar-icon { font-size: 22px; color: var(--gold); line-height: 1; }
+    .add-pillar-label { font-size: 10px; color: rgba(200,169,110,0.7); }
 
     /* DETAIL PANEL */
     #detail-panel {
@@ -425,9 +410,7 @@
 
     /* RESPONSIVE */
     @media (max-width: 620px) {
-      .rings-row { grid-template-columns: 1fr; }
       header { flex-direction: column; align-items: flex-start; }
-      .ring-card { padding: 12px; }
     }
   </style>
 </head>
@@ -642,33 +625,114 @@
       if (typeof renderRoadmap === 'function') renderRoadmap();
     }
 
-    // ─── Rings ───────────────────────────────────────────────────────────────
-    const R = 24;
-    const CIRC = +(2 * Math.PI * R).toFixed(1);
+    // ─── Canvas ───────────────────────────────────────────────────────────────────
+    const R_NODE = 26;
+    const CIRC_NODE = +(2 * Math.PI * R_NODE).toFixed(1);
 
-    function renderRings() {
-      document.getElementById('rings-row').innerHTML = state.pillars.map(p => {
+    function renderCanvas() {
+      const container = document.getElementById('canvas-nodes');
+      container.innerHTML = state.pillars.map(p => {
         const pct = calcProgress(p);
         const { total, done } = countLeaves(p.tasks);
-        const offset = +(CIRC - CIRC * pct / 100).toFixed(1);
+        const offset = +(CIRC_NODE - CIRC_NODE * pct / 100).toFixed(1);
         const active = state.activePillar === p.id;
+        const x = (p.position && p.position.x != null) ? p.position.x : 60;
+        const y = (p.position && p.position.y != null) ? p.position.y : 60;
         return `
-          <div class="ring-card${active ? ' active' : ''}" onclick="activatePillar('${p.id}')">
-            <div class="ring-wrap">
-              <svg viewBox="0 0 56 56">
-                <circle class="ring-bg" cx="28" cy="28" r="${R}"/>
-                <circle class="ring-fill" cx="28" cy="28" r="${R}"
-                  stroke-dasharray="${CIRC}" stroke-dashoffset="${offset}"/>
-              </svg>
-              <div class="ring-pct">${pct}%</div>
-            </div>
-            <div class="ring-info">
-              <div class="ring-pillar-label">${escHtml(p.label)}</div>
-              <div class="ring-name">${p.icon} ${escHtml(p.label)}</div>
-              <div class="ring-count">${done} van ${total} taken klaar</div>
-            </div>
-          </div>`;
+      <div class="pillar-node${active ? ' active' : ''}" id="node-${p.id}"
+           style="left:${x}px;top:${y}px;" data-pillar-id="${p.id}">
+        <div class="node-ring-wrap">
+          <svg viewBox="0 0 64 64">
+            <circle fill="none" stroke="rgba(200,169,110,0.15)" stroke-width="4" cx="32" cy="32" r="${R_NODE}"/>
+            <circle fill="none" stroke="${escHtml(p.color)}" stroke-width="4" stroke-linecap="round"
+              cx="32" cy="32" r="${R_NODE}"
+              stroke-dasharray="${CIRC_NODE}" stroke-dashoffset="${offset}"
+              style="transition:stroke-dashoffset 0.5s cubic-bezier(0.34,1.56,0.64,1)"/>
+          </svg>
+          <div class="node-icon">${p.icon}</div>
+          <div class="node-ring-pct" style="color:${escHtml(p.color)}">${pct}%</div>
+        </div>
+        <div class="node-name">${escHtml(p.label)}</div>
+        <div class="node-count">${done}/${total}</div>
+        <div class="node-edit-controls" style="display:${editMode ? 'flex' : 'none'}">
+          <button class="node-edit-btn" onclick="editPillar(event,'${p.id}')" title="Bewerken">✏</button>
+          <button class="node-edit-btn" id="node-del-${p.id}"
+            onclick="confirmDeletePillar(event,'${p.id}')" title="Verwijderen">🗑</button>
+        </div>
+      </div>`;
       }).join('');
+
+      // Position add-pillar node after last pillar
+      const addNode = document.getElementById('add-pillar-node');
+      const lastPillar = state.pillars[state.pillars.length - 1];
+      if (lastPillar && lastPillar.position) {
+        addNode.style.left = (lastPillar.position.x + 120) + 'px';
+        addNode.style.top = lastPillar.position.y + 'px';
+      }
+
+      attachNodeClickHandlers();
+    }
+
+    function attachNodeClickHandlers() {
+      document.querySelectorAll('.pillar-node').forEach(el => {
+        const pillarId = el.dataset.pillarId;
+        let dragMoved = false;
+        el.addEventListener('mousedown', e => {
+          if (e.target.closest('.node-edit-controls')) return;
+          dragMoved = false;
+          initNodeDrag(e, el, pillarId, () => { dragMoved = true; });
+        });
+        el.addEventListener('click', e => {
+          if (e.target.closest('.node-edit-controls')) return;
+          if (!dragMoved) activatePillar(pillarId);
+        });
+      });
+    }
+
+    function initNodeDrag(e, el, pillarId, onMoved) {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const pillar = getPillar(pillarId);
+      const origX = (pillar.position && pillar.position.x != null) ? pillar.position.x : 0;
+      const origY = (pillar.position && pillar.position.y != null) ? pillar.position.y : 0;
+      let moved = false;
+
+      function onMouseMove(ev) {
+        const dx = ev.clientX - startX;
+        const dy = ev.clientY - startY;
+        if (!moved && Math.abs(dx) + Math.abs(dy) > 5) {
+          moved = true;
+          onMoved();
+          el.classList.add('dragging');
+        }
+        if (!moved) return;
+        el.style.left = Math.max(0, origX + dx) + 'px';
+        el.style.top = Math.max(0, origY + dy) + 'px';
+      }
+
+      function onMouseUp(ev) {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        el.classList.remove('dragging');
+        if (moved) {
+          pillar.position = {
+            x: Math.max(0, origX + (ev.clientX - startX)),
+            y: Math.max(0, origY + (ev.clientY - startY))
+          };
+          saveData();
+          // Reposition add-pillar node
+          const addNode = document.getElementById('add-pillar-node');
+          const lastPillar = state.pillars[state.pillars.length - 1];
+          if (lastPillar && lastPillar.position) {
+            addNode.style.left = (lastPillar.position.x + 120) + 'px';
+            addNode.style.top = lastPillar.position.y + 'px';
+          }
+        }
+      }
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
     }
 
     // ─── Detail Panel ────────────────────────────────────────────────────────
@@ -895,15 +959,18 @@
     }
 
     // ─── Init ────────────────────────────────────────────────────────────────
+    let selectedTaskId = null;
+    let rightPath = [];
+
     function init() {
       state = loadData();
       switchView('dashboard');
-      if (typeof renderCanvas === 'function') {
-        renderCanvas();
-      }
-      if (state.activePillar && typeof renderDetailPanel === 'function') {
+      renderCanvas();
+      if (state.activePillar) {
+        selectedTaskId = null;
+        rightPath = [];
         renderDetailPanel();
-        if (typeof expandPanel === 'function') expandPanel();
+        expandPanel();
       }
     }
 
