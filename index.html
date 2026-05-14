@@ -317,85 +317,50 @@
       font-size: 11px; color: rgba(245,240,232,0.2); text-align: center; padding: 24px;
     }
 
-    /* ROADMAP VIEW */
-    #roadmap-view { display: none; }
-
-    .roadmap-legend {
-      font-size: 12px;
-      color: var(--cream-50);
-      margin-bottom: 22px;
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-
-    .legend-dot {
-      display: inline-block;
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      margin-right: 5px;
-      vertical-align: middle;
-    }
-
-    .phase-item { display: flex; gap: 16px; }
-
-    .phase-marker {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      flex-shrink: 0;
-      width: 40px;
-    }
-
+    /* ── Roadmap ────────────────────────────────────────────────────────────── */
+    #roadmap-view { padding-top: 4px; }
+    #roadmap-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; font-size: 12px; color: var(--cream-50); }
+    .phase-item { display: flex; gap: 16px; margin-bottom: 0; }
+    .phase-marker { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; width: 40px; }
     .phase-dot {
-      width: 40px; height: 40px;
-      border-radius: 50%;
-      border: 2px solid var(--gold-40);
-      background: rgba(200,169,110,0.1);
+      width: 40px; height: 40px; border-radius: 50%;
+      border: 2px solid rgba(200,169,110,0.35); background: rgba(200,169,110,0.08);
       display: flex; align-items: center; justify-content: center;
-      font-family: 'Fraunces', serif;
-      font-size: 16px;
-      font-weight: 400;
-      color: var(--gold);
-      flex-shrink: 0;
+      font-family: 'Fraunces', serif; font-size: 15px; font-weight: 400; color: var(--gold); flex-shrink: 0;
     }
-
-    .phase-dot.future { border-color: rgba(200,169,110,0.2); background: transparent; color: rgba(200,169,110,0.3); }
-
-    .phase-connector {
-      width: 2px;
-      flex: 1;
-      min-height: 16px;
-      background: rgba(200,169,110,0.12);
-      margin-top: 4px;
-    }
-
-    .phase-content { flex: 1; padding-bottom: 26px; padding-top: 8px; }
-
-    .phase-name-label {
-      font-family: 'Fraunces', serif;
-      font-size: 16px;
-      font-weight: 400;
-      color: var(--cream);
-      margin-bottom: 10px;
-    }
-
+    .phase-dot.future { border-color: rgba(200,169,110,0.15); background: transparent; color: rgba(200,169,110,0.25); }
+    .phase-connector { width: 2px; flex: 1; min-height: 16px; background: rgba(200,169,110,0.1); margin-top: 4px; }
+    .phase-content { flex: 1; padding-bottom: 24px; padding-top: 6px; }
+    .phase-name-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .phase-name-label { font-family: 'Fraunces', serif; font-size: 15px; font-weight: 400; color: var(--cream); }
     .phase-name-label.future { color: var(--cream-50); }
-
-    .phase-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-
-    .phase-tag {
-      padding: 4px 10px;
-      border-radius: 5px;
-      font-size: 12px;
-      font-weight: 500;
+    .phase-edit-controls { display: none; gap: 4px; }
+    .phase-edit-btn {
+      padding: 2px 8px; border-radius: 4px;
+      background: rgba(200,169,110,0.08); border: 1px solid rgba(200,169,110,0.2);
+      color: rgba(200,169,110,0.6); font-size: 10px; cursor: pointer; font-family: 'DM Sans', sans-serif;
     }
-
-    .tag-brand { background: rgba(200,169,110,0.15); color: var(--gold); border: 1px solid rgba(200,169,110,0.3); }
-    .tag-website { background: rgba(100,160,210,0.12); color: #7ab8d4; border: 1px solid rgba(100,160,210,0.25); }
-    .tag-automation { background: rgba(120,195,140,0.1); color: #7dc892; border: 1px solid rgba(120,195,140,0.22); }
-    .tag-done { background: rgba(255,255,255,0.04); color: var(--cream-30); border: 1px solid rgba(255,255,255,0.08); text-decoration: line-through; }
-    .tag-empty { font-size: 12px; color: var(--cream-30); font-style: italic; }
+    .phase-edit-btn:hover { background: var(--gold-15); color: var(--gold); }
+    .phase-edit-btn.delete-confirm { background: rgba(220,60,60,0.18); color: #e07070; }
+    .phase-drop-zone { display: flex; flex-wrap: wrap; gap: 5px; min-height: 28px; padding: 4px; border-radius: 5px; border: 1.5px dashed transparent; transition: border-color 0.15s, background 0.15s; }
+    .phase-drop-zone.drag-over { border-color: rgba(200,169,110,0.5); background: rgba(200,169,110,0.06); }
+    .phase-tag {
+      padding: 3px 9px; border-radius: 4px; font-size: 11px; font-weight: 500;
+      border: 1px solid transparent; cursor: grab; user-select: none;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .phase-tag:hover { transform: translateY(-1px); }
+    .phase-tag.dragging { opacity: 0.4; }
+    .phase-tag.tag-done { text-decoration: line-through; opacity: 0.4; cursor: default; }
+    .tag-empty { font-size: 11px; color: var(--cream-30); font-style: italic; }
+    .btn-add-phase {
+      margin-top: 16px; padding: 7px 16px; border-radius: 6px;
+      border: 1.5px dashed rgba(200,169,110,0.25); background: none;
+      font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 500;
+      color: rgba(200,169,110,0.55); cursor: pointer; display: none;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-add-phase:hover { border-color: var(--gold); color: var(--gold); }
 
     /* RESET */
     .reset-section {
@@ -1109,36 +1074,169 @@
       if (!silent) { renderCanvas(); renderDetailPanel(); expandPanel(); }
     }
 
-    // ─── Roadmap ─────────────────────────────────────────────────────────────
-    const PILLAR_TAG = { brand: 'tag-brand', website: 'tag-website', automation: 'tag-automation' };
+    // ─── Roadmap ──────────────────────────────────────────────────────────────────
+    let _draggedBadge = null; // { taskId, pillarId }
 
     function renderRoadmap() {
+      renderRoadmapLegend();
       const container = document.getElementById('roadmap-container');
-      container.innerHTML = state.phases.map((phase, idx) => {
-        const isLast = idx === state.phases.length - 1;
-        const tasks = state.pillars.flatMap(p =>
-          p.tasks.filter(t => t.phase === phase.id).map(t => ({ ...t, pillarId: p.id }))
+      if (!container) return;
+
+      const sortedPhases = [...state.phases].sort((a, b) => a.order - b.order);
+      container.innerHTML = sortedPhases.map((phase, idx) => {
+        const isLast = idx === sortedPhases.length - 1;
+        const phaseTasks = state.pillars.flatMap(p =>
+          flattenTasks(p.tasks)
+            .filter(t => t.phase === phase.id)
+            .map(t => ({ ...t, pillarId: p.id, pillarColor: p.color, pillarIcon: p.icon }))
         );
-        const noTasks = tasks.length === 0;
+        const hasTasks = phaseTasks.length > 0;
 
         return `
-          <div class="phase-item">
-            <div class="phase-marker">
-              <div class="phase-dot${noTasks ? ' future' : ''}">${phase.id}</div>
-              ${!isLast ? '<div class="phase-connector"></div>' : ''}
+      <div class="phase-item">
+        <div class="phase-marker">
+          <div class="phase-dot${!hasTasks ? ' future' : ''}">${phase.order + 1}</div>
+          ${!isLast ? '<div class="phase-connector"></div>' : ''}
+        </div>
+        <div class="phase-content">
+          <div class="phase-name-row">
+            <div class="phase-name-label${!hasTasks ? ' future' : ''}">${escHtml(phase.label)}</div>
+            <div class="phase-edit-controls" style="display:${editMode ? 'flex' : 'none'}">
+              <button class="phase-edit-btn" onclick="startEditPhase(${phase.id})">✏</button>
+              <button class="phase-edit-btn" id="phase-del-${phase.id}"
+                onclick="confirmDeletePhase(${phase.id})">🗑</button>
             </div>
-            <div class="phase-content">
-              <div class="phase-name-label${noTasks ? ' future' : ''}">${escHtml(phase.label)}</div>
-              <div class="phase-tags">
-                ${noTasks
-                  ? '<span class="tag-empty">Geen taken toegewezen</span>'
-                  : tasks.map(t =>
-                    `<span class="phase-tag ${t.done ? 'tag-done' : PILLAR_TAG[t.pillarId]}">${escHtml(t.label)}</span>`
-                  ).join('')}
-              </div>
-            </div>
-          </div>`;
+          </div>
+          <div class="phase-drop-zone" id="drop-zone-${phase.id}" data-phase-id="${phase.id}">
+            ${phaseTasks.length === 0
+              ? '<span class="tag-empty">Geen taken</span>'
+              : phaseTasks.map(t => `
+                  <span class="phase-tag${allLeavesDone(t) ? ' tag-done' : ''}"
+                        style="background:${hexAlpha(t.pillarColor, 0.18)};color:${escHtml(t.pillarColor)};border-color:${hexAlpha(t.pillarColor, 0.3)}"
+                        draggable="${allLeavesDone(t) ? 'false' : 'true'}"
+                        data-task-id="${t.id}" data-pillar-id="${t.pillarId}">
+                    ${escHtml(t.pillarIcon)} ${escHtml(t.label)}
+                  </span>`).join('')
+            }
+          </div>
+        </div>
+      </div>`;
       }).join('');
+
+      // Add phase button
+      let addBtn = document.getElementById('add-phase-btn');
+      if (!addBtn) {
+        addBtn = document.createElement('button');
+        addBtn.id = 'add-phase-btn';
+        addBtn.className = 'btn-add-phase';
+        addBtn.textContent = '+ fase toevoegen';
+        addBtn.onclick = addPhase;
+      }
+      addBtn.style.display = editMode ? 'block' : 'none';
+      container.appendChild(addBtn);
+
+      attachBadgeDragHandlers();
+    }
+
+    function attachBadgeDragHandlers() {
+      document.querySelectorAll('.phase-tag:not(.tag-done)').forEach(tag => {
+        tag.addEventListener('dragstart', e => {
+          _draggedBadge = { taskId: tag.dataset.taskId, pillarId: tag.dataset.pillarId };
+          tag.classList.add('dragging');
+          e.dataTransfer.effectAllowed = 'move';
+        });
+        tag.addEventListener('dragend', () => {
+          tag.classList.remove('dragging');
+          _draggedBadge = null;
+        });
+      });
+
+      document.querySelectorAll('.phase-drop-zone').forEach(zone => {
+        zone.addEventListener('dragover', e => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          zone.classList.add('drag-over');
+        });
+        zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+        zone.addEventListener('drop', e => {
+          e.preventDefault();
+          zone.classList.remove('drag-over');
+          if (!_draggedBadge) return;
+          const newPhaseId = parseInt(zone.dataset.phaseId);
+          const p = getPillar(_draggedBadge.pillarId);
+          if (!p) return;
+          const found = findTask(p.tasks, _draggedBadge.taskId);
+          if (found) { found.task.phase = newPhaseId; saveData(); renderRoadmap(); }
+        });
+      });
+    }
+
+    // ─── Phase CRUD ───────────────────────────────────────────────────────────────
+    const _phaseDeleteConfirm = new Set();
+    const _phaseDeleteTimers = new Map();
+
+    function addPhase() {
+      const maxOrder = state.phases.reduce((m, p) => Math.max(m, p.order), -1);
+      const newId = Math.max(...state.phases.map(p => p.id)) + 1;
+      state.phases.push({ id: newId, label: `Fase ${newId}`, order: maxOrder + 1 });
+      saveData();
+      renderRoadmap();
+      setTimeout(() => startEditPhase(newId), 50);
+    }
+
+    function startEditPhase(phaseId) {
+      const phase = state.phases.find(p => p.id === phaseId);
+      if (!phase) return;
+      const nameEl = document.querySelector(`#drop-zone-${phaseId}`)
+        ?.closest('.phase-content')?.querySelector('.phase-name-label');
+      if (!nameEl) return;
+
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'task-label-input';
+      input.value = phase.label;
+      input.style.fontSize = '14px';
+      nameEl.replaceWith(input);
+      input.focus(); input.select();
+
+      let saved = false;
+      const save = () => {
+        if (saved) return;
+        saved = true;
+        const v = input.value.trim();
+        if (v) phase.label = v;
+        saveData();
+        renderRoadmap();
+      };
+      input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+      input.addEventListener('blur', save);
+    }
+
+    function confirmDeletePhase(phaseId) {
+      const btn = document.getElementById(`phase-del-${phaseId}`);
+      if (!btn) return;
+      if (_phaseDeleteConfirm.has(phaseId)) {
+        clearTimeout(_phaseDeleteTimers.get(phaseId));
+        _phaseDeleteTimers.delete(phaseId);
+        state.pillars.forEach(p =>
+          flattenTasks(p.tasks).forEach(t => { if (t.phase === phaseId) t.phase = null; })
+        );
+        state.phases = state.phases.filter(p => p.id !== phaseId);
+        state.phases.sort((a, b) => a.order - b.order).forEach((p, i) => p.order = i);
+        _phaseDeleteConfirm.delete(phaseId);
+        saveData();
+        renderRoadmap();
+      } else {
+        _phaseDeleteConfirm.add(phaseId);
+        btn.classList.add('delete-confirm');
+        const timer = setTimeout(() => {
+          _phaseDeleteConfirm.delete(phaseId);
+          _phaseDeleteTimers.delete(phaseId);
+          const b = document.getElementById(`phase-del-${phaseId}`);
+          if (b) b.classList.remove('delete-confirm');
+        }, 2500);
+        _phaseDeleteTimers.set(phaseId, timer);
+      }
     }
 
     // ─── View Toggle ─────────────────────────────────────────────────────────
@@ -1156,18 +1254,6 @@
         road.style.display = 'block';
         btns[1].classList.add('active');
         btns[0].classList.remove('active');
-        // Simple legend until renderRoadmapLegend() is implemented in Task 8
-        const legend = document.getElementById('roadmap-legend');
-        if (legend && typeof renderRoadmapLegend === 'function') {
-          renderRoadmapLegend();
-        } else if (legend) {
-          legend.innerHTML = state.pillars.map(p =>
-            `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:rgba(245,240,232,0.5);margin-right:12px">
-              <span style="width:8px;height:8px;border-radius:50%;background:${escHtml(p.color)};display:inline-block"></span>
-              ${escHtml(p.icon)} ${escHtml(p.label)}
-            </span>`
-          ).join('');
-        }
         renderRoadmap();
       }
     }
