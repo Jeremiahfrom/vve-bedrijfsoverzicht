@@ -453,8 +453,8 @@
   <script>
     // ─── Constants ────────────────────────────────────────────────────────────────
     const STORAGE_KEY_V2 = 'vve-dashboard-v2';
-    const STORAGE_KEY_MM  = 'vve-mindmap-v1';
-    let mmData;  // mindmap state: { positions, freeNodes, connections }
+    const STORAGE_KEY_MM = 'vve-mindmap-v1';
+    let mmData = loadMindmapData();  // mindmap state: { positions, freeNodes, connections }
 
     function loadMindmapData() {
       try {
@@ -465,6 +465,9 @@
     }
     function saveMindmapData() {
       localStorage.setItem(STORAGE_KEY_MM, JSON.stringify(mmData));
+    }
+    function renderMindmap() {
+      // implemented in Task 4
     }
 
     const STORAGE_KEY_V1 = 'vve-dashboard-v1';
@@ -1313,6 +1316,7 @@
       if (!confirm('Alle voortgang wissen en terug naar de standaard taken? Dit kan niet ongedaan worden gemaakt.')) return;
       localStorage.removeItem(STORAGE_KEY_V2);
       localStorage.removeItem(STORAGE_KEY_V1);
+      localStorage.removeItem(STORAGE_KEY_MM);
       state = deepClone(DEFAULT_DATA);
       editMode = false;
       document.getElementById('edit-toggle-btn').style.display = '';
