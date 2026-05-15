@@ -744,7 +744,62 @@
     </div>
 
     <div id="mindmap-view" style="display:none">
-      <!-- ingevuld in Task 3 -->
+      <!-- Left palette -->
+      <aside class="mm-palette">
+        <div class="mm-palette-label">Iconen</div>
+        <div class="mm-palette-item" draggable="true" data-type="doel" data-emoji="🎯" data-label="Doel">🎯<span>Doel</span></div>
+        <div class="mm-palette-item" draggable="true" data-type="idee" data-emoji="💡" data-label="Idee">💡<span>Idee</span></div>
+        <div class="mm-palette-item" draggable="true" data-type="blokkade" data-emoji="⚠️" data-label="Blokkade">⚠️<span>Block</span></div>
+        <div class="mm-palette-item" draggable="true" data-type="mijlpaal" data-emoji="🏆" data-label="Mijlpaal">🏆<span>Mijlpaal</span></div>
+        <div class="mm-palette-divider"></div>
+        <div class="mm-palette-item" draggable="true" data-type="notitie" data-emoji="📌" data-label="Notitie">📌<span>Notitie</span></div>
+        <div class="mm-palette-item" draggable="true" data-type="link" data-emoji="🔗" data-label="Link">🔗<span>Link</span></div>
+        <div class="mm-palette-item" draggable="true" data-type="datum" data-emoji="📅" data-label="Datum">📅<span>Datum</span></div>
+      </aside>
+
+      <!-- Canvas -->
+      <div class="mm-canvas-wrap" id="mm-canvas-wrap">
+        <div id="mm-canvas">
+          <svg id="mm-svg"></svg>
+          <!-- nodes injected by renderMindmap() -->
+        </div>
+      </div>
+
+      <!-- Right panel -->
+      <aside class="mm-side-panel" id="mm-side-panel">
+        <div>
+          <div class="mm-panel-title">Status</div>
+          <div class="mm-sync-badge"><div class="mm-sync-dot"></div>Live gesynchroniseerd</div>
+        </div>
+        <div id="mm-stats">
+          <!-- ingevuld door renderMindmapPanel() -->
+        </div>
+        <div>
+          <div class="mm-panel-title" style="margin-bottom:5px">Vrije nodes</div>
+          <div class="mm-stat">
+            <div class="mm-stat-label">Geplaatst</div>
+            <div class="mm-stat-value" id="mm-free-count">0</div>
+          </div>
+        </div>
+        <div class="mm-tips">
+          • Sleep iconen vanuit het palet<br>
+          • Selecteer + klik tweede node = verbinding<br>
+          • Dubbelklik label = bewerken<br>
+          • Taken afvinken = dashboard bijgewerkt
+        </div>
+      </aside>
+
+      <!-- Floating toolbar -->
+      <div class="mm-toolbar">
+        <button class="mm-tool-btn active" id="mm-tool-select" title="Selecteren" onclick="mmSetTool('select')">↖</button>
+        <button class="mm-tool-btn" id="mm-tool-connect" title="Verbinding tekenen" onclick="mmSetTool('connect')">〰</button>
+        <div class="mm-tool-sep"></div>
+        <button class="mm-tool-btn" title="Zoom in" onclick="mmZoomBy(0.15)">+</button>
+        <button class="mm-tool-btn" title="Zoom out" onclick="mmZoomBy(-0.15)">−</button>
+        <button class="mm-tool-btn" title="Reset view" onclick="mmResetView()">⊙</button>
+        <div class="mm-tool-sep"></div>
+        <button class="mm-tool-btn" title="Opslaan" onclick="saveMindmapData(); mmFlashSave(this)">💾</button>
+      </div>
     </div>
 
     <div class="reset-section">
