@@ -418,6 +418,7 @@
         <div class="view-toggle">
           <button class="toggle-btn active" onclick="switchView('dashboard')">Dashboard</button>
           <button class="toggle-btn" onclick="switchView('roadmap')">Roadmap</button>
+          <button class="toggle-btn" onclick="switchView('mindmap')">🗺 Mindmap</button>
         </div>
         <button class="edit-btn" id="edit-toggle-btn" onclick="toggleEditMode()">✏ Bewerken</button>
         <button class="edit-done-btn" id="edit-done-btn" onclick="toggleEditMode()" style="display:none">✓ Klaar</button>
@@ -440,6 +441,10 @@
       <div id="roadmap-container"></div>
     </div>
 
+    <div id="mindmap-view" style="display:none">
+      <!-- ingevuld in Task 3 -->
+    </div>
+
     <div class="reset-section">
       <button class="btn-reset" onclick="resetData()">Voortgang resetten</button>
     </div>
@@ -448,6 +453,20 @@
   <script>
     // ─── Constants ────────────────────────────────────────────────────────────────
     const STORAGE_KEY_V2 = 'vve-dashboard-v2';
+    const STORAGE_KEY_MM  = 'vve-mindmap-v1';
+    let mmData;  // mindmap state: { positions, freeNodes, connections }
+
+    function loadMindmapData() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_MM);
+        if (raw) return JSON.parse(raw);
+      } catch {}
+      return { positions: {}, freeNodes: [], connections: [] };
+    }
+    function saveMindmapData() {
+      localStorage.setItem(STORAGE_KEY_MM, JSON.stringify(mmData));
+    }
+
     const STORAGE_KEY_V1 = 'vve-dashboard-v1';
     const PRESET_COLORS = ['#c8a96e','#6aabf7','#5dd9a0','#e07070','#c47ed4','#f0c060'];
 
@@ -609,6 +628,7 @@
     }
 
     // ─── Edit Mode ────────────────────────────────────────────────────────────────
+    let currentView = 'dashboard';
     let editMode = false;
     let selectedTaskId = null;
     let rightPath = [];
@@ -1263,20 +1283,28 @@
 
     // ─── View Toggle ─────────────────────────────────────────────────────────
     function switchView(view) {
+      currentView = view;
       const dash = document.getElementById('dashboard-view');
       const road = document.getElementById('roadmap-view');
+      const mind = document.getElementById('mindmap-view');
       const btns = document.querySelectorAll('.toggle-btn');
+      dash.style.display = 'none';
+      road.style.display = 'none';
+      mind.style.display = 'none';
+      btns.forEach(b => b.classList.remove('active'));
+
       if (view === 'dashboard') {
         dash.style.display = 'block';
-        road.style.display = 'none';
         btns[0].classList.add('active');
-        btns[1].classList.remove('active');
-      } else {
-        dash.style.display = 'none';
+      } else if (view === 'roadmap') {
         road.style.display = 'block';
         btns[1].classList.add('active');
-        btns[0].classList.remove('active');
         renderRoadmap();
+      } else if (view === 'mindmap') {
+        mind.style.display = 'flex';
+        btns[2].classList.add('active');
+        mmData = loadMindmapData();
+        renderMindmap();
       }
     }
 
