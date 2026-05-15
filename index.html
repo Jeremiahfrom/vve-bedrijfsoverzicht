@@ -823,9 +823,276 @@
     function saveMindmapData() {
       localStorage.setItem(STORAGE_KEY_MM, JSON.stringify(mmData));
     }
+    // ─── Mindmap ──────────────────────────────────────────────────────────────
+    const MM_DEFAULT_POSITIONS = {
+      hub:        { x: 920, y: 520 },
+      brand:      { x: 550, y: 250 },
+      website:    { x: 1050, y: 180 },
+      automation: { x: 820, y: 820 }
+    };
+
+    let mmTool = 'select';       // 'select' | 'connect'
+    let mmConnectSource = null;  // node element being connected from
+    let mmZoom = 1;
+    let mmSelectedConn = null;   // selected connection id
+
     function renderMindmap() {
-      // implemented in Task 4
+      const canvas = document.getElementById('mm-canvas');
+      // Remove all existing nodes (keep SVG)
+      canvas.querySelectorAll('.mm-hub, .mm-pillar, .mm-task, .mm-free').forEach(el => el.remove());
+
+      renderMindmapHub(canvas);
+      state.pillars.forEach(p => renderMindmapPillar(canvas, p));
+      renderMindmapFreeNodes(canvas);
+      renderMindmapSVG();
+      renderMindmapPanel();
+      document.getElementById('mm-free-count').textContent = mmData.freeNodes.length;
     }
+
+    function getMMPos(nodeId, defaultPos) {
+      return mmData.positions[nodeId] || defaultPos || MM_DEFAULT_POSITIONS[nodeId] || { x: 100, y: 100 };
+    }
+
+    function setMMPos(nodeId, x, y) {
+      mmData.positions[nodeId] = { x, y };
+    }
+
+    function renderMindmapHub(canvas) {
+      const pos = getMMPos('hub', MM_DEFAULT_POSITIONS.hub);
+      const el = document.createElement('div');
+      el.className = 'mm-hub';
+      el.id = 'mm-node-hub';
+      el.dataset.nodeId = 'hub';
+      el.style.left = pos.x + 'px';
+      el.style.top  = pos.y + 'px';
+      el.innerHTML = 'VvE<br>Collectief';
+      canvas.appendChild(el);
+      initMindmapDrag(el, 'hub');
+    }
+
+    function renderMindmapPillar(canvas, pillar) {
+      const defaultPos = MM_DEFAULT_POSITIONS[pillar.id] || { x: 200, y: 200 };
+      const pos = getMMPos(pillar.id, defaultPos);
+      const pct = calcProgress(pillar);
+      const { total, done } = countLeaves(pillar.tasks);
+      const hidden = (mmData.hiddenTasks || {})[pillar.id];
+
+      const el = document.createElement('div');
+      el.className = 'mm-pillar';
+      el.id = 'mm-node-' + pillar.id;
+      el.dataset.nodeId = pillar.id;
+      el.style.left = pos.x + 'px';
+      el.style.top  = pos.y + 'px';
+      el.innerHTML = `
+        <div class="mm-pillar-header">
+          <span class="mm-pillar-emoji">${escHtml(pillar.icon)}</span>
+          <span class="mm-pillar-name">${escHtml(pillar.label)}</span>
+        </div>
+        <div class="mm-pillar-bar-wrap">
+          <div class="mm-pillar-bar" style="width:${pct}%;background:${escHtml(pillar.color)}"></div>
+        </div>
+        <div class="mm-pillar-count">${done}/${total} taken voltooid</div>
+        <button class="mm-pillar-toggle" onclick="mmToggleTasks('${escHtml(pillar.id)}')">${hidden ? '&#9654; toon taken' : '&#9660; verberg taken'}</button>
+      `;
+      canvas.appendChild(el);
+      initMindmapDrag(el, pillar.id);
+      initConnectClick(el);
+
+      if (!hidden) {
+        renderMindmapTaskPills(canvas, pillar);
+      }
+    }
+
+    function renderMindmapTaskPills(canvas, pillar) {
+      const pillarPos = getMMPos(pillar.id, MM_DEFAULT_POSITIONS[pillar.id] || { x: 200, y: 200 });
+      // Flat list of leaf tasks only
+      const leaves = [];
+      function collectLeaves(tasks) {
+        tasks.forEach(t => {
+          if (!t.children || t.children.length === 0) leaves.push(t);
+          else collectLeaves(t.children);
+        });
+      }
+      collectLeaves(pillar.tasks);
+
+      leaves.forEach((task, i) => {
+        const taskNodeId = pillar.id + '-' + task.id;
+        const defaultPos = {
+          x: pillarPos.x + 160 + (i % 2) * 10,
+          y: pillarPos.y + i * 32 - (leaves.length * 16) + 20
+        };
+        const pos = getMMPos(taskNodeId, defaultPos);
+
+        const el = document.createElement('div');
+        el.className = 'mm-task' + (task.done ? ' done' : '');
+        el.id = 'mm-node-' + taskNodeId;
+        el.dataset.nodeId = taskNodeId;
+        el.dataset.taskId = task.id;
+        el.dataset.pillarId = pillar.id;
+        el.style.left = pos.x + 'px';
+        el.style.top  = pos.y + 'px';
+        el.innerHTML = `
+          <div class="mm-task-check${task.done ? ' done' : ''}" data-task-id="${escHtml(task.id)}" data-pillar-id="${escHtml(pillar.id)}"></div>
+          <span class="mm-task-label">${escHtml(task.label)}</span>
+        `;
+        canvas.appendChild(el);
+        initMindmapDrag(el, taskNodeId);
+        initConnectClick(el);
+
+        // Checkbox click
+        el.querySelector('.mm-task-check').addEventListener('click', e => {
+          e.stopPropagation();
+          const p = getPillar(pillar.id);
+          const found = findTask(p.tasks, task.id);
+          if (found) {
+            found.task.done = !found.task.done;
+            saveData();
+            renderMindmap();
+          }
+        });
+      });
+    }
+
+    function renderMindmapFreeNodes(canvas) {
+      (mmData.freeNodes || []).forEach(fn => {
+        const el = document.createElement('div');
+        el.className = 'mm-free';
+        el.id = 'mm-node-' + fn.id;
+        el.dataset.nodeId = fn.id;
+        el.style.left = fn.x + 'px';
+        el.style.top  = fn.y + 'px';
+        el.innerHTML = `
+          <div class="mm-free-icon">${fn.emoji}</div>
+          <div class="mm-free-label" contenteditable="true" spellcheck="false">${escHtml(fn.label)}</div>
+        `;
+        canvas.appendChild(el);
+        initMindmapDrag(el, fn.id);
+        initConnectClick(el);
+
+        // Label edit → save
+        const labelEl = el.querySelector('.mm-free-label');
+        labelEl.addEventListener('blur', () => {
+          fn.label = labelEl.textContent.trim() || fn.emoji;
+          saveMindmapData();
+        });
+        labelEl.addEventListener('keydown', e => {
+          if (e.key === 'Enter') { e.preventDefault(); labelEl.blur(); }
+        });
+        // Prevent drag when editing label
+        labelEl.addEventListener('mousedown', e => e.stopPropagation());
+      });
+    }
+
+    function mmToggleTasks(pillarId) {
+      if (!mmData.hiddenTasks) mmData.hiddenTasks = {};
+      mmData.hiddenTasks[pillarId] = !mmData.hiddenTasks[pillarId];
+      saveMindmapData();
+      renderMindmap();
+    }
+
+    function renderMindmapPanel() {
+      const statsEl = document.getElementById('mm-stats');
+      statsEl.innerHTML = state.pillars.map(p => {
+        const pct = calcProgress(p);
+        return `
+          <div class="mm-stat">
+            <div class="mm-stat-label">${escHtml(p.icon)} ${escHtml(p.label)}</div>
+            <div class="mm-stat-value">${pct}%</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function mmSetTool(tool) {
+      mmTool = tool;
+      mmConnectSource = null;
+      document.getElementById('mm-tool-select').classList.toggle('active', tool === 'select');
+      document.getElementById('mm-tool-connect').classList.toggle('active', tool === 'connect');
+      document.querySelectorAll('.mm-pillar, .mm-task, .mm-free, .mm-hub').forEach(el => {
+        el.style.cursor = tool === 'connect' ? 'crosshair' : 'move';
+      });
+    }
+
+    function mmFlashSave(btn) {
+      const orig = btn.textContent;
+      btn.textContent = '✓';
+      btn.style.color = '#4ade80';
+      setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 800);
+    }
+
+    function renderMindmapSVG() {
+      const svg = document.getElementById('mm-svg');
+      svg.innerHTML = '';
+
+      function addAutoLine(fromId, toId, opacity) {
+        const from = getMMNodeCenter(fromId);
+        const to   = getMMNodeCenter(toId);
+        if (!from || !to) return;
+        const dx = to.x - from.x;
+        const dy = to.y - from.y;
+        const cx1 = from.x + dx * 0.4;
+        const cy1 = from.y;
+        const cx2 = from.x + dx * 0.6;
+        const cy2 = to.y;
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', `M${from.x},${from.y} C${cx1},${cy1} ${cx2},${cy2} ${to.x},${to.y}`);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', '#c8a96e');
+        path.setAttribute('stroke-width', opacity > 0.35 ? '1.5' : '1');
+        path.setAttribute('stroke-dasharray', opacity > 0.35 ? '6,4' : '3,4');
+        path.setAttribute('stroke-opacity', opacity);
+        svg.appendChild(path);
+      }
+
+      // Hub → each pillar
+      state.pillars.forEach(p => {
+        addAutoLine('hub', p.id, 0.5);
+        // Pillar → its task leaves
+        const hidden = (mmData.hiddenTasks || {})[p.id];
+        if (!hidden) {
+          const leaves = [];
+          const collectLeaves = tasks => { tasks.forEach(t => { if (!t.children || !t.children.length) leaves.push(t); else collectLeaves(t.children); }); };
+          collectLeaves(p.tasks);
+          leaves.forEach(t => addAutoLine(p.id, p.id + '-' + t.id, 0.25));
+        }
+      });
+
+      // Manual connections
+      (mmData.connections || []).forEach(conn => {
+        const from = getMMNodeCenter(conn.from);
+        const to   = getMMNodeCenter(conn.to);
+        if (!from || !to) return;
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', from.x); line.setAttribute('y1', from.y);
+        line.setAttribute('x2', to.x);   line.setAttribute('y2', to.y);
+        line.setAttribute('stroke', '#c8a96e');
+        line.setAttribute('stroke-width', conn.id === mmSelectedConn ? '2.5' : '1.5');
+        line.setAttribute('stroke-opacity', conn.id === mmSelectedConn ? '0.9' : '0.55');
+        line.setAttribute('stroke-dasharray', '4,3');
+        line.classList.add('mm-conn-line');
+        if (conn.id === mmSelectedConn) line.classList.add('selected');
+        line.style.pointerEvents = 'stroke';
+        line.addEventListener('click', () => {
+          mmSelectedConn = mmSelectedConn === conn.id ? null : conn.id;
+          renderMindmapSVG();
+        });
+        svg.appendChild(line);
+      });
+    }
+
+    function getMMNodeCenter(nodeId) {
+      const el = document.getElementById('mm-node-' + nodeId);
+      if (!el) return null;
+      const x = parseInt(el.style.left) + el.offsetWidth / 2;
+      const y = parseInt(el.style.top)  + el.offsetHeight / 2;
+      return { x, y };
+    }
+
+    // Stubs for functions added in later tasks — prevent ReferenceErrors
+    function initMindmapDrag(el, nodeId) { /* Task 5 */ }
+    function initConnectClick(el) { /* Task 7 */ }
+    function mmZoomBy(delta) { /* Task 8 */ }
+    function mmResetView() { /* Task 8 */ }
 
     const STORAGE_KEY_V1 = 'vve-dashboard-v1';
     const PRESET_COLORS = ['#c8a96e','#6aabf7','#5dd9a0','#e07070','#c47ed4','#f0c060'];
