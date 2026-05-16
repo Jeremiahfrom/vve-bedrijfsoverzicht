@@ -483,11 +483,12 @@ body.mm-fullscreen header {
 .mm-palette-item span { font-size: 8px; color: rgba(245,240,232,0.45); }
 .mm-palette-divider { width: 40px; height: 1px; background: rgba(200,169,110,0.14); margin: 3px 0; }
 
-/* Canvas wrapper — scrollable */
+/* Canvas wrapper — pan by drag, no scrollbars */
 .mm-canvas-wrap {
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
   position: relative;
+  cursor: grab;
   background:
     radial-gradient(ellipse at 25% 15%, rgba(200,169,110,0.05) 0%, transparent 55%),
     #0a1520;
@@ -496,12 +497,15 @@ body.mm-fullscreen header {
     radial-gradient(circle, rgba(200,169,110,0.11) 1px, transparent 1px);
   background-size: auto, 32px 32px;
 }
+.mm-canvas-wrap.panning { cursor: grabbing; }
 
-/* Large canvas surface */
+/* Large canvas surface — positioned absolutely so wrap never grows */
 #mm-canvas {
-  position: relative;
-  width: 2000px;
-  height: 1200px;
+  position: absolute;
+  top: 0; left: 0;
+  width: 3000px;
+  height: 2000px;
+  transform-origin: 0 0;
 }
 #mm-svg {
   position: absolute;
@@ -934,7 +938,14 @@ body.mm-fullscreen header {
     let mmTool = 'select';       // 'select' | 'connect'
     let mmConnectSource = null;  // node element being connected from
     let mmZoom = 1;
+    let mmPanX = 0, mmPanY = 0;
     let mmSelectedConn = null;   // selected connection id
+
+    function mmApplyTransform() {
+      const canvas = document.getElementById('mm-canvas');
+      if (!canvas) return;
+      canvas.style.transform = `translate(${mmPanX}px,${mmPanY}px) scale(${mmZoom})`;
+    }
 
     function renderMindmap() {
       const canvas = document.getElementById('mm-canvas');
@@ -949,21 +960,77 @@ body.mm-fullscreen header {
       document.getElementById('mm-free-count').textContent = mmData.freeNodes.length;
       mmInitPaletteDrag();
 
-      // Ctrl+scroll zoom (attach once)
       const wrap = document.getElementById('mm-canvas-wrap');
+
+      // Zoom + pan via wheel (attach once)
       if (wrap && !wrap._zoomBound) {
         wrap._zoomBound = true;
         wrap.addEventListener('wheel', e => {
-          if (!e.ctrlKey && !e.metaKey) return;
           e.preventDefault();
-          mmZoomBy(e.deltaY < 0 ? 0.1 : -0.1);
+          if (e.ctrlKey || e.metaKey) {
+            mmZoomBy(e.deltaY < 0 ? 0.1 : -0.1, e.clientX, e.clientY);
+          } else {
+            mmPanX -= e.deltaX;
+            mmPanY -= e.deltaY;
+            mmApplyTransform();
+          }
         }, { passive: false });
       }
 
-      // Center view on first open
+      // Pan by drag on empty canvas (attach once)
+      if (wrap && !wrap._panBound) {
+        wrap._panBound = true;
+        let isPanning = false, panStartX, panStartY, panOrigX, panOrigY;
+
+        wrap.addEventListener('mousedown', e => {
+          if (e.button !== 0) return;
+          if (e.target.closest('.mm-hub,.mm-pillar,.mm-task,.mm-free,.mm-toolbar,.mm-panel,.mm-palette')) return;
+          isPanning = true;
+          panStartX = e.clientX; panStartY = e.clientY;
+          panOrigX = mmPanX; panOrigY = mmPanY;
+          wrap.classList.add('panning');
+          e.preventDefault();
+        });
+        document.addEventListener('mousemove', e => {
+          if (!isPanning) return;
+          mmPanX = panOrigX + (e.clientX - panStartX);
+          mmPanY = panOrigY + (e.clientY - panStartY);
+          mmApplyTransform();
+        });
+        document.addEventListener('mouseup', () => {
+          if (!isPanning) return;
+          isPanning = false;
+          wrap.classList.remove('panning');
+        });
+
+        // Touch pan
+        let tPanning = false, tStartX, tStartY, tOrigX, tOrigY;
+        wrap.addEventListener('touchstart', e => {
+          if (e.touches.length !== 1) return;
+          if (e.target.closest('.mm-hub,.mm-pillar,.mm-task,.mm-free')) return;
+          tPanning = true;
+          tStartX = e.touches[0].clientX; tStartY = e.touches[0].clientY;
+          tOrigX = mmPanX; tOrigY = mmPanY;
+        }, { passive: true });
+        wrap.addEventListener('touchmove', e => {
+          if (!tPanning || e.touches.length !== 1) return;
+          e.preventDefault();
+          mmPanX = tOrigX + (e.touches[0].clientX - tStartX);
+          mmPanY = tOrigY + (e.touches[0].clientY - tStartY);
+          mmApplyTransform();
+        }, { passive: false });
+        wrap.addEventListener('touchend', () => { tPanning = false; });
+      }
+
+      // Center hub on first open
       if (wrap && !mmData._viewInitialized) {
         mmData._viewInitialized = true;
-        setTimeout(() => { wrap.scrollLeft = 700; wrap.scrollTop = 300; }, 0);
+        setTimeout(() => {
+          const rect = wrap.getBoundingClientRect();
+          mmPanX = rect.width  / 2 - 920;
+          mmPanY = rect.height / 2 - 520;
+          mmApplyTransform();
+        }, 50);
       }
     }
 
@@ -1217,7 +1284,7 @@ body.mm-fullscreen header {
         let moved = false;
 
         function applyMove(cx, cy) {
-          const dx = cx - startX, dy = cy - startY;
+          const dx = (cx - startX) / mmZoom, dy = (cy - startY) / mmZoom;
           if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
           const newX = Math.max(0, Math.min(origLeft + dx, canvas.offsetWidth  - el.offsetWidth));
           const newY = Math.max(0, Math.min(origTop  + dy, canvas.offsetHeight - el.offsetHeight));
@@ -1338,9 +1405,8 @@ body.mm-fullscreen header {
           e.preventDefault();
           if (!dragType) return;
           const rect = canvas.getBoundingClientRect();
-          const wrap = document.getElementById('mm-canvas-wrap');
-          const x = (e.clientX - rect.left + wrap.scrollLeft) / mmZoom - 21;
-          const y = (e.clientY - rect.top  + wrap.scrollTop)  / mmZoom - 21;
+          const x = (e.clientX - rect.left) / mmZoom - 21;
+          const y = (e.clientY - rect.top)  / mmZoom - 21;
           const fn = {
             id:    'fn-' + generateId(),
             type:  dragType,
@@ -1357,19 +1423,31 @@ body.mm-fullscreen header {
         });
       }
     }
-    function mmZoomBy(delta) {
-      mmZoom = Math.min(2, Math.max(0.4, mmZoom + delta));
-      const canvas = document.getElementById('mm-canvas');
-      canvas.style.transform = `scale(${mmZoom})`;
-      canvas.style.transformOrigin = '0 0';
+    function mmZoomBy(delta, pivotClientX, pivotClientY) {
+      const newZoom = Math.min(2, Math.max(0.4, mmZoom + delta));
+      if (pivotClientX !== undefined) {
+        const wrap = document.getElementById('mm-canvas-wrap');
+        if (wrap) {
+          const rect = wrap.getBoundingClientRect();
+          const px = pivotClientX - rect.left;
+          const py = pivotClientY - rect.top;
+          mmPanX = px - (px - mmPanX) * (newZoom / mmZoom);
+          mmPanY = py - (py - mmPanY) * (newZoom / mmZoom);
+        }
+      }
+      mmZoom = newZoom;
+      mmApplyTransform();
     }
 
     function mmResetView() {
       mmZoom = 1;
-      const canvas = document.getElementById('mm-canvas');
-      canvas.style.transform = '';
       const wrap = document.getElementById('mm-canvas-wrap');
-      if (wrap) { wrap.scrollLeft = 700; wrap.scrollTop = 300; }
+      if (wrap) {
+        const rect = wrap.getBoundingClientRect();
+        mmPanX = rect.width  / 2 - 920;
+        mmPanY = rect.height / 2 - 520;
+      } else { mmPanX = 0; mmPanY = 0; }
+      mmApplyTransform();
     }
 
     // Delete selected connection
