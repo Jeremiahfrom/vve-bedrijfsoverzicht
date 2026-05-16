@@ -409,12 +409,33 @@
       .detail-col-left { border-right: none; border-bottom: 1px solid rgba(200,169,110,0.12); }
     }
 
+/* ── Mindmap full-screen mode ────────────────────────────────────────────── */
+body.mm-fullscreen {
+  overflow: hidden;
+}
+body.mm-fullscreen #app {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+body.mm-fullscreen header {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  margin-bottom: 0;
+  border-bottom: 1px solid rgba(200,169,110,0.12);
+}
+
 /* ── Mindmap ────────────────────────────────────────────────────────────── */
 #mindmap-view {
   display: flex;
   flex-direction: row;
-  height: calc(100vh - 72px);
-  margin: -28px -20px -60px;
+  flex: 1;
+  min-height: 0;
+  margin: 0;
   position: relative;
 }
 
@@ -710,6 +731,83 @@
 .mm-tool-btn:hover { background: rgba(200,169,110,0.18); color: var(--cream); }
 .mm-tool-btn.active { background: rgba(200,169,110,0.22); border-color: var(--gold); color: var(--gold); }
 .mm-tool-sep { width: 1px; height: 20px; background: rgba(200,169,110,0.18); }
+
+/* Mobile palette toggle button (hidden on desktop) */
+.mm-palette-fab {
+  display: none;
+}
+
+/* ── Mindmap Responsive ─────────────────────────────────────────────────── */
+
+/* Tablet (≤900px): smaller side panel */
+@media (max-width: 900px) {
+  .mm-side-panel { width: 160px; padding: 12px 10px; }
+  .mm-stat-value { font-size: 11px; }
+  .mm-palette { width: 60px; }
+  .mm-palette-item { width: 42px; height: 42px; font-size: 16px; }
+}
+
+/* Mobile (≤640px): palette as bottom sheet, side panel hidden */
+@media (max-width: 640px) {
+  body.mm-fullscreen header { padding: 8px 12px; }
+  body.mm-fullscreen .app-title { font-size: 16px; }
+
+  #mindmap-view { flex-direction: column; }
+
+  /* Hide sidebar palette — shown via FAB instead */
+  .mm-palette { display: none; }
+  .mm-palette.mm-open {
+    display: flex;
+    flex-direction: row;
+    position: fixed;
+    bottom: 64px;
+    left: 0; right: 0;
+    width: 100%;
+    height: 70px;
+    background: var(--navy);
+    border-top: 1px solid rgba(200,169,110,0.2);
+    overflow-x: auto;
+    padding: 8px 16px;
+    gap: 10px;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-start;
+    z-index: 20;
+  }
+  .mm-palette.mm-open .mm-palette-label,
+  .mm-palette.mm-open .mm-palette-divider { display: none; }
+  .mm-palette.mm-open .mm-palette-item { width: 48px; height: 48px; flex-shrink: 0; }
+
+  /* FAB button to open palette */
+  .mm-palette-fab {
+    display: flex;
+    position: fixed;
+    bottom: 80px;
+    right: 16px;
+    width: 48px; height: 48px;
+    background: var(--gold);
+    color: var(--navy);
+    border-radius: 50%;
+    border: none;
+    font-size: 22px;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(200,169,110,0.4);
+    cursor: pointer;
+    z-index: 25;
+  }
+
+  /* Hide side panel on mobile */
+  .mm-side-panel { display: none; }
+
+  /* Toolbar: smaller buttons, more padding for touch */
+  .mm-toolbar { bottom: 12px; padding: 8px 12px; gap: 8px; }
+  .mm-tool-btn { width: 40px; height: 40px; font-size: 16px; border-radius: 10px; }
+  .mm-tool-sep { height: 24px; }
+
+  /* Canvas wrap takes full height */
+  .mm-canvas-wrap { flex: 1; min-height: 0; }
+}
   </style>
 </head>
 <body>
@@ -800,6 +898,8 @@
         <div class="mm-tool-sep"></div>
         <button class="mm-tool-btn" title="Opslaan" onclick="saveMindmapData(); mmFlashSave(this)">💾</button>
       </div>
+      <!-- Mobile FAB to open palette -->
+      <button class="mm-palette-fab" id="mm-palette-fab" onclick="mmTogglePalette()" title="Iconen">＋</button>
     </div>
 
     <div class="reset-section">
@@ -1109,22 +1209,15 @@
 
     // Stubs for functions added in later tasks — prevent ReferenceErrors
     function initMindmapDrag(el, nodeId) {
-      el.addEventListener('mousedown', e => {
-        if (mmTool === 'connect') return;
-        if (e.target.closest('.mm-task-check, .mm-pillar-toggle, .mm-free-label')) return;
-        e.preventDefault();
-        e.stopPropagation();
-
+      function startDrag(clientX, clientY) {
         const canvas = document.getElementById('mm-canvas');
-        const startX = e.clientX;
-        const startY = e.clientY;
+        const startX = clientX, startY = clientY;
         const origLeft = parseInt(el.style.left) || 0;
         const origTop  = parseInt(el.style.top)  || 0;
         let moved = false;
 
-        function onMove(ev) {
-          const dx = ev.clientX - startX;
-          const dy = ev.clientY - startY;
+        function applyMove(cx, cy) {
+          const dx = cx - startX, dy = cy - startY;
           if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
           const newX = Math.max(0, Math.min(origLeft + dx, canvas.offsetWidth  - el.offsetWidth));
           const newY = Math.max(0, Math.min(origTop  + dy, canvas.offsetHeight - el.offsetHeight));
@@ -1133,27 +1226,61 @@
           renderMindmapSVG();
         }
 
-        function onUp() {
-          document.removeEventListener('mousemove', onMove);
-          document.removeEventListener('mouseup', onUp);
+        function savePos() {
           if (!moved) return;
-
-          const newX = parseInt(el.style.left);
-          const newY = parseInt(el.style.top);
-
+          const newX = parseInt(el.style.left), newY = parseInt(el.style.top);
           const fn = (mmData.freeNodes || []).find(f => f.id === nodeId);
-          if (fn) {
-            fn.x = newX; fn.y = newY;
-          } else {
-            setMMPos(nodeId, newX, newY);
-          }
+          if (fn) { fn.x = newX; fn.y = newY; }
+          else { setMMPos(nodeId, newX, newY); }
           saveMindmapData();
           renderMindmapSVG();
         }
 
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup', onUp);
+        // Mouse listeners
+        function onMouseMove(ev) { applyMove(ev.clientX, ev.clientY); }
+        function onMouseUp() {
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+          savePos();
+        }
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+        return { applyMove, savePos };
+      }
+
+      // Mouse drag
+      el.addEventListener('mousedown', e => {
+        if (mmTool === 'connect') return;
+        if (e.target.closest('.mm-task-check, .mm-pillar-toggle, .mm-free-label')) return;
+        e.preventDefault();
+        e.stopPropagation();
+        startDrag(e.clientX, e.clientY);
       });
+
+      // Touch drag
+      el.addEventListener('touchstart', e => {
+        if (mmTool === 'connect') return;
+        if (e.target.closest('.mm-task-check, .mm-pillar-toggle, .mm-free-label')) return;
+        e.preventDefault();
+        const t = e.touches[0];
+        const { applyMove, savePos } = startDrag(t.clientX, t.clientY);
+        function onTouchMove(ev) { ev.preventDefault(); applyMove(ev.touches[0].clientX, ev.touches[0].clientY); }
+        function onTouchEnd() {
+          el.removeEventListener('touchmove', onTouchMove);
+          el.removeEventListener('touchend', onTouchEnd);
+          savePos();
+        }
+        el.addEventListener('touchmove', onTouchMove, { passive: false });
+        el.addEventListener('touchend', onTouchEnd);
+      }, { passive: false });
+    }
+
+    function mmTogglePalette() {
+      const palette = document.querySelector('.mm-palette');
+      const fab = document.getElementById('mm-palette-fab');
+      if (!palette) return;
+      const isOpen = palette.classList.toggle('mm-open');
+      if (fab) fab.textContent = isOpen ? '✕' : '＋';
     }
     function initConnectClick(el) {
       el.addEventListener('click', e => {
@@ -2084,14 +2211,17 @@
       btns.forEach(b => b.classList.remove('active'));
 
       if (view === 'dashboard') {
+        document.body.classList.remove('mm-fullscreen');
         dash.style.display = 'block';
         btns[0].classList.add('active');
         document.getElementById('edit-toggle-btn').style.display = '';
       } else if (view === 'roadmap') {
+        document.body.classList.remove('mm-fullscreen');
         road.style.display = 'block';
         btns[1].classList.add('active');
         renderRoadmap();
       } else if (view === 'mindmap') {
+        document.body.classList.add('mm-fullscreen');
         mind.style.display = 'flex';
         btns[2].classList.add('active');
         document.getElementById('edit-toggle-btn').style.display = 'none';
