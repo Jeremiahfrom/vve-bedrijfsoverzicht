@@ -847,6 +847,24 @@
       renderMindmapSVG();
       renderMindmapPanel();
       document.getElementById('mm-free-count').textContent = mmData.freeNodes.length;
+      mmInitPaletteDrag();
+
+      // Ctrl+scroll zoom (attach once)
+      const wrap = document.getElementById('mm-canvas-wrap');
+      if (wrap && !wrap._zoomBound) {
+        wrap._zoomBound = true;
+        wrap.addEventListener('wheel', e => {
+          if (!e.ctrlKey && !e.metaKey) return;
+          e.preventDefault();
+          mmZoomBy(e.deltaY < 0 ? 0.1 : -0.1);
+        }, { passive: false });
+      }
+
+      // Center view on first open
+      if (wrap && !mmData._viewInitialized) {
+        mmData._viewInitialized = true;
+        setTimeout(() => { wrap.scrollLeft = 700; wrap.scrollTop = 300; }, 0);
+      }
     }
 
     function getMMPos(nodeId, defaultPos) {
@@ -1089,10 +1107,151 @@
     }
 
     // Stubs for functions added in later tasks — prevent ReferenceErrors
-    function initMindmapDrag(el, nodeId) { /* Task 5 */ }
-    function initConnectClick(el) { /* Task 7 */ }
-    function mmZoomBy(delta) { /* Task 8 */ }
-    function mmResetView() { /* Task 8 */ }
+    function initMindmapDrag(el, nodeId) {
+      el.addEventListener('mousedown', e => {
+        if (mmTool === 'connect') return;
+        if (e.target.closest('.mm-task-check, .mm-pillar-toggle, .mm-free-label')) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        const canvas = document.getElementById('mm-canvas');
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const origLeft = parseInt(el.style.left) || 0;
+        const origTop  = parseInt(el.style.top)  || 0;
+        let moved = false;
+
+        function onMove(ev) {
+          const dx = ev.clientX - startX;
+          const dy = ev.clientY - startY;
+          if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+          const newX = Math.max(0, Math.min(origLeft + dx, canvas.offsetWidth  - el.offsetWidth));
+          const newY = Math.max(0, Math.min(origTop  + dy, canvas.offsetHeight - el.offsetHeight));
+          el.style.left = newX + 'px';
+          el.style.top  = newY + 'px';
+          renderMindmapSVG();
+        }
+
+        function onUp() {
+          document.removeEventListener('mousemove', onMove);
+          document.removeEventListener('mouseup', onUp);
+          if (!moved) return;
+
+          const newX = parseInt(el.style.left);
+          const newY = parseInt(el.style.top);
+
+          const fn = (mmData.freeNodes || []).find(f => f.id === nodeId);
+          if (fn) {
+            fn.x = newX; fn.y = newY;
+          } else {
+            setMMPos(nodeId, newX, newY);
+          }
+          saveMindmapData();
+          renderMindmapSVG();
+        }
+
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup', onUp);
+      });
+    }
+    function initConnectClick(el) {
+      el.addEventListener('click', e => {
+        if (mmTool !== 'connect') return;
+        e.stopPropagation();
+        const nodeId = el.dataset.nodeId;
+
+        if (!mmConnectSource) {
+          mmConnectSource = nodeId;
+          el.style.outline = '2px solid #c8a96e';
+          el.style.outlineOffset = '3px';
+        } else {
+          if (mmConnectSource !== nodeId) {
+            if (!mmData.connections) mmData.connections = [];
+            const exists = mmData.connections.some(
+              c => (c.from === mmConnectSource && c.to === nodeId) ||
+                   (c.from === nodeId && c.to === mmConnectSource)
+            );
+            if (!exists) {
+              mmData.connections.push({ id: 'c-' + generateId(), from: mmConnectSource, to: nodeId });
+              saveMindmapData();
+            }
+          }
+          document.querySelectorAll('.mm-pillar, .mm-task, .mm-free, .mm-hub').forEach(n => {
+            n.style.outline = ''; n.style.outlineOffset = '';
+          });
+          mmConnectSource = null;
+          renderMindmapSVG();
+        }
+      });
+    }
+
+    function mmInitPaletteDrag() {
+      let dragType = null, dragEmoji = null, dragLabel = null;
+
+      document.querySelectorAll('.mm-palette-item').forEach(item => {
+        item.addEventListener('dragstart', e => {
+          dragType  = item.dataset.type;
+          dragEmoji = item.dataset.emoji;
+          dragLabel = item.dataset.label;
+          e.dataTransfer.effectAllowed = 'copy';
+          e.dataTransfer.setData('text/plain', dragType);
+        });
+      });
+
+      const canvas = document.getElementById('mm-canvas');
+      canvas.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+      });
+
+      canvas.addEventListener('drop', e => {
+        e.preventDefault();
+        if (!dragType) return;
+        const rect = canvas.getBoundingClientRect();
+        const wrap = document.getElementById('mm-canvas-wrap');
+        const x = (e.clientX - rect.left + wrap.scrollLeft) / mmZoom - 21;
+        const y = (e.clientY - rect.top  + wrap.scrollTop)  / mmZoom - 21;
+        const fn = {
+          id:    'fn-' + generateId(),
+          type:  dragType,
+          emoji: dragEmoji,
+          label: dragLabel,
+          x: Math.round(x),
+          y: Math.round(y)
+        };
+        if (!mmData.freeNodes) mmData.freeNodes = [];
+        mmData.freeNodes.push(fn);
+        saveMindmapData();
+        renderMindmap();
+        dragType = null;
+      });
+    }
+    function mmZoomBy(delta) {
+      mmZoom = Math.min(2, Math.max(0.4, mmZoom + delta));
+      const canvas = document.getElementById('mm-canvas');
+      canvas.style.transform = `scale(${mmZoom})`;
+      canvas.style.transformOrigin = '0 0';
+    }
+
+    function mmResetView() {
+      mmZoom = 1;
+      const canvas = document.getElementById('mm-canvas');
+      canvas.style.transform = '';
+      const wrap = document.getElementById('mm-canvas-wrap');
+      if (wrap) { wrap.scrollLeft = 700; wrap.scrollTop = 300; }
+    }
+
+    // Delete selected connection
+    document.addEventListener('keydown', e => {
+      if (currentView !== 'mindmap') return;
+      if ((e.key === 'Delete' || e.key === 'Backspace') && mmSelectedConn) {
+        if (document.activeElement && document.activeElement.isContentEditable) return;
+        mmData.connections = (mmData.connections || []).filter(c => c.id !== mmSelectedConn);
+        mmSelectedConn = null;
+        saveMindmapData();
+        renderMindmapSVG();
+      }
+    });
 
     const STORAGE_KEY_V1 = 'vve-dashboard-v1';
     const PRESET_COLORS = ['#c8a96e','#6aabf7','#5dd9a0','#e07070','#c47ed4','#f0c060'];
@@ -1923,6 +2082,7 @@
       if (view === 'dashboard') {
         dash.style.display = 'block';
         btns[0].classList.add('active');
+        document.getElementById('edit-toggle-btn').style.display = '';
       } else if (view === 'roadmap') {
         road.style.display = 'block';
         btns[1].classList.add('active');
@@ -1930,6 +2090,9 @@
       } else if (view === 'mindmap') {
         mind.style.display = 'flex';
         btns[2].classList.add('active');
+        document.getElementById('edit-toggle-btn').style.display = 'none';
+        document.getElementById('edit-done-btn').style.display = 'none';
+        if (editMode) editMode = false;
         mmData = loadMindmapData();
         renderMindmap();
       }
@@ -1949,9 +2112,19 @@
       init();
     }
 
+    // Cross-tab sync: dashboard changes → update mindmap
+    window.addEventListener('storage', e => {
+      if (e.key === STORAGE_KEY_V2) {
+        state = loadData();
+        if (currentView === 'mindmap') renderMindmap();
+        else if (currentView === 'dashboard') renderCanvas();
+      }
+    });
+
     // ─── Init ────────────────────────────────────────────────────────────────
     function init() {
-      state = loadData();
+      state  = loadData();
+      mmData = loadMindmapData();
       switchView('dashboard');
       renderCanvas();
       if (state.activePillar) {
