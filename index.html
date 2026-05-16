@@ -653,7 +653,7 @@ body.mm-fullscreen header {
 
 /* Right side panel */
 .mm-side-panel {
-  width: 200px;
+  width: 220px;
   background: var(--navy);
   border-left: 1px solid rgba(200,169,110,0.14);
   padding: 16px 14px;
@@ -851,7 +851,7 @@ body.mm-fullscreen header {
         <div class="mm-palette-label">Iconen</div>
         <div class="mm-palette-item" draggable="true" data-type="doel" data-emoji="🎯" data-label="Doel">🎯<span>Doel</span></div>
         <div class="mm-palette-item" draggable="true" data-type="idee" data-emoji="💡" data-label="Idee">💡<span>Idee</span></div>
-        <div class="mm-palette-item" draggable="true" data-type="blokkade" data-emoji="⚠️" data-label="Blokkade">⚠️<span>Block</span></div>
+        <div class="mm-palette-item" draggable="true" data-type="blokkade" data-emoji="⚠️" data-label="Blokkade">⚠️<span>Blokkade</span></div>
         <div class="mm-palette-item" draggable="true" data-type="mijlpaal" data-emoji="🏆" data-label="Mijlpaal">🏆<span>Mijlpaal</span></div>
         <div class="mm-palette-divider"></div>
         <div class="mm-palette-item" draggable="true" data-type="notitie" data-emoji="📌" data-label="Notitie">📌<span>Notitie</span></div>
@@ -895,6 +895,7 @@ body.mm-fullscreen header {
       <div class="mm-toolbar">
         <button class="mm-tool-btn active" id="mm-tool-select" title="Selecteren" onclick="mmSetTool('select')">↖</button>
         <button class="mm-tool-btn" id="mm-tool-connect" title="Verbinding tekenen" onclick="mmSetTool('connect')">〰</button>
+        <button class="mm-tool-btn" id="mm-tool-text" title="Tekstlabel toevoegen" onclick="mmSetTool('text')">T</button>
         <div class="mm-tool-sep"></div>
         <button class="mm-tool-btn" title="Zoom in" onclick="mmZoomBy(0.15)">+</button>
         <button class="mm-tool-btn" title="Zoom out" onclick="mmZoomBy(-0.15)">−</button>
@@ -984,6 +985,7 @@ body.mm-fullscreen header {
 
         wrap.addEventListener('mousedown', e => {
           if (e.button !== 0) return;
+          if (mmTool === 'text') return;
           if (e.target.closest('.mm-hub,.mm-pillar,.mm-task,.mm-free,.mm-toolbar,.mm-panel,.mm-palette')) return;
           isPanning = true;
           panStartX = e.clientX; panStartY = e.clientY;
@@ -1020,6 +1022,34 @@ body.mm-fullscreen header {
           mmApplyTransform();
         }, { passive: false });
         wrap.addEventListener('touchend', () => { tPanning = false; });
+      }
+
+      // Text-tool: click on empty canvas → place text node
+      if (wrap && !wrap._textBound) {
+        wrap._textBound = true;
+        wrap.addEventListener('click', e => {
+          if (mmTool !== 'text') return;
+          if (e.target.closest('.mm-hub,.mm-pillar,.mm-task,.mm-free,.mm-toolbar,.mm-panel,.mm-palette')) return;
+          const canvas = document.getElementById('mm-canvas');
+          const rect = canvas.getBoundingClientRect();
+          const fn = {
+            id: 'fn-' + generateId(),
+            type: 'tekst',
+            emoji: '📝',
+            label: '',
+            x: Math.round((e.clientX - rect.left) / mmZoom - 20),
+            y: Math.round((e.clientY - rect.top)  / mmZoom - 20)
+          };
+          if (!mmData.freeNodes) mmData.freeNodes = [];
+          mmData.freeNodes.push(fn);
+          saveMindmapData();
+          mmSetTool('select');
+          renderMindmap();
+          setTimeout(() => {
+            const lbl = document.querySelector(`#mm-node-${fn.id} .mm-free-label`);
+            if (lbl) { lbl.focus(); }
+          }, 50);
+        });
       }
 
       // Center hub on first open
@@ -1194,9 +1224,13 @@ body.mm-fullscreen header {
       mmConnectSource = null;
       document.getElementById('mm-tool-select').classList.toggle('active', tool === 'select');
       document.getElementById('mm-tool-connect').classList.toggle('active', tool === 'connect');
+      document.getElementById('mm-tool-text').classList.toggle('active', tool === 'text');
+      const nodeCursor = tool === 'connect' ? 'crosshair' : tool === 'text' ? 'text' : 'move';
       document.querySelectorAll('.mm-pillar, .mm-task, .mm-free, .mm-hub').forEach(el => {
-        el.style.cursor = tool === 'connect' ? 'crosshair' : 'move';
+        el.style.cursor = nodeCursor;
       });
+      const wrap = document.getElementById('mm-canvas-wrap');
+      if (wrap) wrap.style.cursor = tool === 'text' ? 'text' : 'grab';
     }
 
     function mmFlashSave(btn) {
@@ -1424,7 +1458,7 @@ body.mm-fullscreen header {
       }
     }
     function mmZoomBy(delta, pivotClientX, pivotClientY) {
-      const newZoom = Math.min(2, Math.max(0.4, mmZoom + delta));
+      const newZoom = Math.min(2, Math.max(0.5, mmZoom + delta));
       if (pivotClientX !== undefined) {
         const wrap = document.getElementById('mm-canvas-wrap');
         if (wrap) {
