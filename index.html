@@ -1699,6 +1699,19 @@ body.mm-fullscreen header {
           if (e.target.closest('.node-edit-controls')) return;
           if (!dragMoved) activatePillar(pillarId);
         });
+        // Touch tap to open detail panel
+        let touchStartX, touchStartY;
+        el.addEventListener('touchstart', e => {
+          if (e.target.closest('.node-edit-controls')) return;
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+        el.addEventListener('touchend', e => {
+          if (e.target.closest('.node-edit-controls')) return;
+          const dx = Math.abs(e.changedTouches[0].clientX - touchStartX);
+          const dy = Math.abs(e.changedTouches[0].clientY - touchStartY);
+          if (dx < 12 && dy < 12) activatePillar(pillarId);
+        }, { passive: true });
       });
     }
 
@@ -1960,11 +1973,13 @@ body.mm-fullscreen header {
                onclick="${isAuto ? 'event.stopPropagation()' : `event.stopPropagation();toggleTask('${task.id}')`}">
             ${isDone ? '✓' : ''}
           </div>
-          <div class="task-label${isDone ? ' done' : ''}">${escHtml(task.label)}</div>
+          <div class="task-label${isDone ? ' done' : ''}"
+               ondblclick="event.stopPropagation();startEditTask('${task.id}')"
+               title="Dubbelklik om te bewerken">${escHtml(task.label)}</div>
           <span class="task-chevron${hasChildren ? ' has-children' : ''}">
             ${hasChildren ? '› ' + task.children.length : '›'}
           </span>
-          <div class="task-icons" style="display:${editMode ? 'flex' : 'none'}">
+          <div class="task-icons" style="display:${editMode ? 'flex' : 'none'};opacity:${editMode ? '1' : '0'}">
             <button class="task-icon" onclick="event.stopPropagation();startEditTask('${task.id}')" title="Wijzigen">✏</button>
             <button class="task-icon" id="del-${task.id}"
               onclick="event.stopPropagation();confirmDeleteTask('${task.id}')" title="Verwijderen">🗑</button>
@@ -2056,6 +2071,7 @@ body.mm-fullscreen header {
       labelEl.replaceWith(input);
       input.focus();
       if (task.label) input.select();
+      input.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
       let saved = false;
       const save = () => {
