@@ -571,6 +571,21 @@ body.mm-fullscreen header {
   transition: color 0.15s;
 }
 .mm-pillar-toggle:hover { color: var(--gold); }
+.mm-pillar-add {
+  font-size: 9px;
+  color: rgba(200,169,110,0.5);
+  cursor: pointer;
+  background: none;
+  border: 1px dashed rgba(200,169,110,0.25);
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin-top: 5px;
+  display: block;
+  width: 100%;
+  text-align: center;
+  transition: color 0.15s, border-color 0.15s;
+}
+.mm-pillar-add:hover { color: var(--gold); border-color: var(--gold); }
 
 /* Task pill nodes */
 .mm-task {
@@ -936,11 +951,12 @@ body.mm-fullscreen header {
       automation: { x: 820, y: 820 }
     };
 
-    let mmTool = 'select';       // 'select' | 'connect'
+    let mmTool = 'select';       // 'select' | 'connect' | 'text'
     let mmConnectSource = null;  // node element being connected from
     let mmZoom = 1;
     let mmPanX = 0, mmPanY = 0;
     let mmSelectedConn = null;   // selected connection id
+    let mmDragJustEnded = false; // guard: prevents text-tool click after a drag
 
     function mmApplyTransform() {
       const canvas = document.getElementById('mm-canvas');
@@ -968,12 +984,13 @@ body.mm-fullscreen header {
         wrap._zoomBound = true;
         wrap.addEventListener('wheel', e => {
           e.preventDefault();
-          if (e.ctrlKey || e.metaKey) {
-            mmZoomBy(e.deltaY < 0 ? 0.1 : -0.1, e.clientX, e.clientY);
-          } else {
+          if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+            // Horizontal scroll → pan
             mmPanX -= e.deltaX;
-            mmPanY -= e.deltaY;
             mmApplyTransform();
+          } else {
+            // Vertical scroll → zoom toward cursor
+            mmZoomBy(e.deltaY < 0 ? 0.1 : -0.1, e.clientX, e.clientY);
           }
         }, { passive: false });
       }
@@ -1029,6 +1046,7 @@ body.mm-fullscreen header {
         wrap._textBound = true;
         wrap.addEventListener('click', e => {
           if (mmTool !== 'text') return;
+          if (mmDragJustEnded) return;
           if (e.target.closest('.mm-hub,.mm-pillar,.mm-task,.mm-free,.mm-toolbar,.mm-panel,.mm-palette')) return;
           const canvas = document.getElementById('mm-canvas');
           const rect = canvas.getBoundingClientRect();
@@ -1109,6 +1127,7 @@ body.mm-fullscreen header {
         </div>
         <div class="mm-pillar-count">${done}/${total} taken voltooid</div>
         <button class="mm-pillar-toggle" onclick="mmToggleTasks('${escHtml(pillar.id)}')">${hidden ? '&#9654; toon taken' : '&#9660; verberg taken'}</button>
+        <button class="mm-pillar-add" onclick="event.stopPropagation();mmAddTask('${escHtml(pillar.id)}')">+ taak</button>
       `;
       canvas.appendChild(el);
       initMindmapDrag(el, pillar.id);
@@ -1204,6 +1223,21 @@ body.mm-fullscreen header {
       mmData.hiddenTasks[pillarId] = !mmData.hiddenTasks[pillarId];
       saveMindmapData();
       renderMindmap();
+    }
+
+    function mmAddTask(pillarId) {
+      const name = prompt('Naam nieuwe taak:');
+      if (!name || !name.trim()) return;
+      const pillar = state.pillars.find(p => p.id === pillarId);
+      if (!pillar) return;
+      const task = { id: generateId(), label: name.trim(), done: false, children: [] };
+      pillar.tasks.push(task);
+      saveData();
+      renderMindmap();
+      if (currentView !== 'mindmap') return;
+      // Brief flash to confirm sync
+      const badge = document.querySelector('.mm-sync-badge');
+      if (badge) { badge.style.opacity = '0.5'; setTimeout(() => { badge.style.opacity = ''; }, 600); }
     }
 
     function renderMindmapPanel() {
@@ -1342,6 +1376,7 @@ body.mm-fullscreen header {
         function onMouseUp() {
           document.removeEventListener('mousemove', onMouseMove);
           document.removeEventListener('mouseup', onMouseUp);
+          if (moved) { mmDragJustEnded = true; setTimeout(() => { mmDragJustEnded = false; }, 250); }
           savePos();
         }
         document.addEventListener('mousemove', onMouseMove);
@@ -1352,7 +1387,7 @@ body.mm-fullscreen header {
       // Mouse drag
       el.addEventListener('mousedown', e => {
         if (mmTool === 'connect') return;
-        if (e.target.closest('.mm-task-check, .mm-pillar-toggle, .mm-free-label')) return;
+        if (e.target.closest('.mm-task-check, .mm-pillar-toggle, .mm-pillar-add, .mm-free-label')) return;
         e.preventDefault();
         e.stopPropagation();
         startDrag(e.clientX, e.clientY);
@@ -1361,7 +1396,7 @@ body.mm-fullscreen header {
       // Touch drag
       el.addEventListener('touchstart', e => {
         if (mmTool === 'connect') return;
-        if (e.target.closest('.mm-task-check, .mm-pillar-toggle, .mm-free-label')) return;
+        if (e.target.closest('.mm-task-check, .mm-pillar-toggle, .mm-pillar-add, .mm-free-label')) return;
         e.preventDefault();
         const t = e.touches[0];
         const { applyMove, savePos } = startDrag(t.clientX, t.clientY);
@@ -2356,6 +2391,7 @@ body.mm-fullscreen header {
         document.getElementById('edit-done-btn').style.display = 'none';
         if (editMode) editMode = false;
         mmData = loadMindmapData();
+        mmSetTool('select');
         renderMindmap();
       }
     }
